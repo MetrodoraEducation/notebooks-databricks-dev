@@ -93,6 +93,37 @@
 
 # COMMAND ----------
 
+# DBTITLE 1,Valid that the view have the duplicates or not
+# MAGIC %sql
+# MAGIC SELECT lead_id, COUNT(*)
+# MAGIC FROM dim_lead_view
+# MAGIC GROUP BY lead_id
+# MAGIC HAVING COUNT(*) > 1;
+
+# COMMAND ----------
+
+# DBTITLE 1,Deduplicated la vista dim_lead_view
+# MAGIC %sql
+# MAGIC CREATE OR REPLACE TEMPORARY VIEW dim_lead_view AS
+# MAGIC SELECT DISTINCT
+# MAGIC     leads.id AS lead_id,
+# MAGIC     FIRST_VALUE(COALESCE(contacts.first_name, leads.first_name)) 
+# MAGIC         OVER (PARTITION BY leads.id ORDER BY leads.modified_time DESC) AS lead_name, -- Prioridad: Contactos > Leads
+# MAGIC     FIRST_VALUE(COALESCE(contacts.email, leads.email)) 
+# MAGIC         OVER (PARTITION BY leads.id ORDER BY leads.modified_time DESC) AS lead_email, -- Prioridad: Contactos > Leads
+# MAGIC     FIRST_VALUE(leads.lead_status) 
+# MAGIC         OVER (PARTITION BY leads.id ORDER BY leads.modified_time DESC) AS lead_status,
+# MAGIC     FIRST_VALUE(leads.lead_rating) 
+# MAGIC         OVER (PARTITION BY leads.id ORDER BY leads.modified_time DESC) AS lead_rating,
+# MAGIC     MIN(leads.modified_time) 
+# MAGIC         OVER (PARTITION BY leads.id) AS modified_date,
+# MAGIC     current_timestamp() AS created_date
+# MAGIC FROM silver_lakehouse.zoholeads leads
+# MAGIC LEFT JOIN silver_lakehouse.zohocontacts contacts
+# MAGIC     ON leads.email = contacts.email;
+
+# COMMAND ----------
+
 # DBTITLE 1,dim_lead
 # MAGIC %sql
 # MAGIC MERGE INTO gold_lakehouse.dim_lead AS target

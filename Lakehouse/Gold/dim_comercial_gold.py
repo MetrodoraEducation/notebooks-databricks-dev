@@ -6,7 +6,10 @@
 
 # MAGIC %sql
 # MAGIC CREATE OR REPLACE TEMPORARY VIEW comercial_sales_view
-# MAGIC     AS SELECT distinct propietario_lead as nombre_comercial, institucion as equipo_comercial FROM silver_lakehouse.sales where propietario_lead<>'n/a'
+# MAGIC     AS SELECT 
+# MAGIC             distinct propietario_lead as nombre_comercial
+# MAGIC                     ,institucion as equipo_comercial 
+# MAGIC          FROM silver_lakehouse.sales where propietario_lead<>'n/a'
 
 # COMMAND ----------
 

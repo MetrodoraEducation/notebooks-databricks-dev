@@ -305,6 +305,7 @@ spark.sql(sql_query)
 
 # COMMAND ----------
 
+# DBTITLE 1,mapeo_modalidad
 
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.mapeo_modalidad
@@ -368,6 +369,7 @@ spark.sql(sql_query)
 
 # COMMAND ----------
 
+# DBTITLE 1,mapeo_sede
 
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.mapeo_sede
@@ -410,6 +412,7 @@ spark.sql(sql_query)
 
 # COMMAND ----------
 
+# DBTITLE 1,mapeo_estudio
 
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.mapeo_estudio
@@ -690,3 +693,101 @@ importe_venta_neta double,
 importe_venta_bruta double,
 importe_captacion double,
 processdate timestamp
+
+# COMMAND ----------
+
+# DBTITLE 1,dim_producto
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_producto
+(
+    idDimProducto BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    codProductoOrigen STRING,
+    codProductoCorto STRING,
+    codProducto STRING NOT NULL,
+    origenProducto STRING,
+    tipoProducto STRING,
+    area STRING,
+    nombreOficial STRING,
+    curso STRING,
+    numeroCurso INT,
+    fechaInicioCurso DATE,
+    fechaFinCurso DATE,
+    ciclo_id INT,
+    numPlazas INT,
+    numGrupo INT,
+    vertical STRING,
+    codVertical STRING,
+    especialidad STRING,
+    codEspecialidad STRING,
+    numCreditos DOUBLE,
+    codPrograma STRING,
+    admiteAdmision STRING,
+    tipoNegocio STRING,
+    acreditado STRING,
+    nombreWeb STRING,
+    entidadLegal STRING,
+    codEntidadLegal STRING,
+    modalidad STRING,
+    codModalidad STRING,
+    fechaInicio DATE,
+    fechaFin DATE,
+    mesesDuracion INT,
+    horasAcreditadas INT,
+    horasPresenciales INT,
+    fechaInicioPago DATE,
+    fechaFinPago DATE,
+    numCuotas INT,
+    importeCertificado DOUBLE,
+    importeAmpliacion DOUBLE,
+    importeDocencia DOUBLE,
+    importeMatricula DOUBLE,
+    importeTotal DOUBLE,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_producto';
+"""
+
+spark.sql(sql_query)
+
+# COMMAND ----------
+
+# DBTITLE 1,dim_programa
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_programa
+(
+    idDimPrograma BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    nombrePrograma STRING NOT NULL,
+    codPrograma STRING NOT NULL,
+    tipoPrograma STRING,
+    entidadLegal STRING,
+    especialidad STRING,
+    vertical STRING,
+    nombreProgramaCompleto STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_programa';
+"""
+
+spark.sql(sql_query)
+
+# COMMAND ----------
+
+# DBTITLE 1,dim_vertical
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_vertical 
+(
+    idDimVertical BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    nombreVertical STRING,
+    nombreVerticalCorto STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_vertical ';
+"""
+
+spark.sql(sql_query)
