@@ -791,3 +791,109 @@ LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim
 """
 
 spark.sql(sql_query)
+
+# COMMAND ----------
+
+# DBTITLE 1,dim_entidad_legal
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_entidad_legal 
+(
+    idDimInstitucion BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    nombreInstitucion STRING NOT NULL,
+    codigoEntidadLegal STRING NOT NULL,  -- Aquí aplicamos NOT NULL desde el inicio
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_entidad_legal ';
+"""
+
+spark.sql(sql_query)
+
+# COMMAND ----------
+
+# DBTITLE 1,dim_motivo_perdida
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_motivo_perdida 
+(
+    idDimMotivoPerdida BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    nombreDimMotivoPerdida STRING NOT NULL,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_motivo_perdida';
+"""
+
+spark.sql(sql_query)
+
+# COMMAND ----------
+
+# DBTITLE 1,dim_especialidad
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_especialidad 
+(
+    idDimEspecialidad BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    nombreEspecialidad STRING NOT NULL,
+    codEspecialidad STRING NOT NULL,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_especialidad';
+"""
+
+spark.sql(sql_query)
+
+# COMMAND ----------
+
+# DBTITLE 1,dim_utm_campaign
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_utm_campaign 
+(
+    id_dim_utm_campaign BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1) PRIMARY KEY,
+    utm_campaign_id STRING NOT NULL,
+    utm_campaign_name STRING,
+    utm_strategy STRING,
+    utm_channel STRING
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_utm_campaign';
+"""
+
+spark.sql(sql_query)
+
+# COMMAND ----------
+
+# DBTITLE 1,dim_utm_adset
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_utm_adset 
+(
+    id_dim_utm_ad BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1) PRIMARY KEY,
+    utm_ad_id STRING NOT NULL,
+    utm_adset_id STRING,
+    utm_term STRING
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_utm_adset';
+"""
+
+spark.sql(sql_query)
+
+# COMMAND ----------
+
+# DBTITLE 1,dim_utm_source
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_utm_source 
+(
+    id_dim_utm_source BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1) PRIMARY KEY,
+    utm_source STRING NOT NULL,
+    utm_type STRING,
+    utm_medium STRING,
+    utm_profile STRING
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_utm_source';
+"""
+
+spark.sql(sql_query)

@@ -128,6 +128,7 @@ classlifetitulaciones_df.printSchema()
 # COMMAND ----------
 
 from pyspark.sql.functions import col, to_date, to_timestamp, lit, current_timestamp
+from pyspark.sql.types import StringType, IntegerType, DoubleType, StructField, StructType
 
 def clean_column_names(df):
     """
@@ -173,10 +174,6 @@ date_columns = [
 for col_name in date_columns:
     classlifetitulaciones_df = classlifetitulaciones_df.withColumn(col_name, to_date(col(col_name), "dd/MM/yyyy"))
 
-# 📌 Verificar los tipos de las columnas antes de convertir
-print("Schema antes de conversión:")
-classlifetitulaciones_df.printSchema()
-
 # 📌 Convertir `fecha_creacion` y `ultima_actualizacion` a TIMESTAMP asegurando el formato correcto
 datetime_columns = ["fecha_creacion", "ultima_actualizacion"]
 
@@ -214,25 +211,28 @@ columnas_finales = [
     "tiponegocio", "processdate", "sourceSystem"
 ]
 
-# 📌 Eliminar columnas duplicadas en la lista de selección
-columnas_finales = list(set(columnas_finales))  # Convierte a set y de nuevo a lista para eliminar duplicados
+# 📌 Asegurar que todas las columnas están presentes, incluso si están vacías
+columnas_actuales = set(classlifetitulaciones_df.columns)
+columnas_faltantes = [col for col in columnas_finales if col not in columnas_actuales]
 
-# 📌 Filtrar solo las columnas que existen en el DataFrame
-columnas_disponibles = [col for col in columnas_finales if col in classlifetitulaciones_df.columns]
+# 📌 Agregar columnas faltantes con valores `None`
+for col_name in columnas_faltantes:
+    classlifetitulaciones_df = classlifetitulaciones_df.withColumn(col_name, lit(None).cast(StringType()))
 
-# 📌 Si no hay coincidencias, mostramos advertencia
-if not columnas_disponibles:
-    print("⚠️ Ninguna de las columnas esperadas está disponible en el DataFrame. Verifica la limpieza de nombres.")
+# 📌 Verificar que todas las columnas requeridas están presentes ahora
+columnas_actualizadas = set(classlifetitulaciones_df.columns)
+faltantes_despues = [col for col in columnas_finales if col not in columnas_actualizadas]
 
-# 📌 Seleccionar solo las columnas disponibles
-classlifetitulaciones_df = classlifetitulaciones_df.select(*columnas_disponibles)
+if faltantes_despues:
+    print("⚠️ Aún faltan las siguientes columnas:", faltantes_despues)
+else:
+    print("✅ Todas las columnas requeridas están presentes en el DataFrame.")
+
+# 📌 Seleccionar solo las columnas esperadas en el orden correcto
+classlifetitulaciones_df = classlifetitulaciones_df.select(*columnas_finales)
 
 # 📌 Mostrar los primeros registros
 display(classlifetitulaciones_df)
-
-# COMMAND ----------
-
-classlifetitulaciones_df = classlifetitulaciones_df.dropDuplicates()
 
 # COMMAND ----------
 
@@ -245,13 +245,12 @@ classlifetitulaciones_df.createOrReplaceTempView("classlifetitulaciones_view")
 # MAGIC USING classlifetitulaciones_view AS source
 # MAGIC ON target.enroll_group_id = source.enroll_group_id
 # MAGIC WHEN MATCHED THEN 
-# MAGIC     UPDATE SET 
-# MAGIC         target.school_name = source.school_name,
-# MAGIC         target.degree_title = source.degree_title,
-# MAGIC         target.area_title = source.area_title,
-# MAGIC         target.year = source.year,
-# MAGIC         target.vertical = source.vertical
-# MAGIC         -- Agregar todas las columnas necesarias
+# MAGIC     UPDATE SET *
 # MAGIC WHEN NOT MATCHED THEN 
-# MAGIC     INSERT (enroll_group_id, school_name, degree_title, area_title, year, vertical) 
-# MAGIC     VALUES (source.enroll_group_id, source.school_name, source.degree_title, source.area_title, source.year, source.vertical);
+# MAGIC     INSERT *;
+# MAGIC
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from silver_lakehouse.classlifetitulaciones

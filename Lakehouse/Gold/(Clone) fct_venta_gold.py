@@ -147,14 +147,6 @@ fct_venta_df.createOrReplaceTempView("fct_venta_view")
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC SELECT cod_venta, COUNT(*)
-# MAGIC FROM fct_venta_view
-# MAGIC GROUP BY cod_venta
-# MAGIC HAVING COUNT(*) > 1;
-
-# COMMAND ----------
-
-# MAGIC %sql
 # MAGIC MERGE WITH SCHEMA EVOLUTION 
 # MAGIC INTO gold_lakehouse.fct_venta
 # MAGIC USING fct_venta_view 

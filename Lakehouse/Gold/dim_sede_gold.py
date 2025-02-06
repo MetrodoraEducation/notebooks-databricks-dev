@@ -1,4 +1,9 @@
 # Databricks notebook source
+# MAGIC %md
+# MAGIC ### **DIM_SEDE**
+
+# COMMAND ----------
+
 # MAGIC %sql
 # MAGIC CREATE OR REPLACE TEMPORARY VIEW sede_sales_view AS 
 # MAGIC SELECT 
