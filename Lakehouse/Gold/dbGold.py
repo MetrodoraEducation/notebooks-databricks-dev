@@ -855,7 +855,9 @@ CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_utm_campaign
     utm_campaign_id STRING NOT NULL,
     utm_campaign_name STRING,
     utm_strategy STRING,
-    utm_channel STRING
+    utm_channel STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_utm_campaign';
@@ -872,7 +874,9 @@ CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_utm_adset
     id_dim_utm_ad BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1) PRIMARY KEY,
     utm_ad_id STRING NOT NULL,
     utm_adset_id STRING,
-    utm_term STRING
+    utm_term STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_utm_adset';
@@ -890,7 +894,9 @@ CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_utm_source
     utm_source STRING NOT NULL,
     utm_type STRING,
     utm_medium STRING,
-    utm_profile STRING
+    utm_profile STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_utm_source';

@@ -5,53 +5,67 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **Gestion sales**
+# MAGIC **Gestion Zoho**
 
 # COMMAND ----------
 
-# DBTITLE 1,Cruze por name
-# MAGIC %sql
-# MAGIC CREATE OR REPLACE TEMPORARY VIEW comercial_sales_view AS 
-# MAGIC SELECT DISTINCT 
-# MAGIC     TRIM(sales.propietario_lead) AS nombre_comercial,
-# MAGIC     TRIM(sales.institucion) AS equipo_comercial,
-# MAGIC     COALESCE(lead.id, NULL) AS cod_comercial,
-# MAGIC     CURRENT_DATE() AS fecha_Desde,
-# MAGIC     NULL AS fecha_Hasta,
-# MAGIC     1 AS activo
-# MAGIC FROM silver_lakehouse.sales sales
-# MAGIC LEFT JOIN silver_lakehouse.zoholeads lead
-# MAGIC     ON UPPER(TRIM(sales.propietario_lead)) = UPPER(TRIM(CONCAT(lead.first_name, ' ', lead.last_name)))
-# MAGIC WHERE TRIM(sales.propietario_lead) IS NOT NULL
-# MAGIC   AND TRIM(sales.propietario_lead) <> 'n/a';
+# MAGIC %md
+# MAGIC  Explicación Detallada del Código
+# MAGIC ✅ Vista Temporal (dim_comercial_temp_view):
 # MAGIC
-# MAGIC select * from comercial_sales_view 
+# MAGIC Extrae los datos desde zohousers y los prepara para la actualización.
+# MAGIC Establece fechaDesde = current_date(), mientras que fechaHasta queda NULL.
+# MAGIC ✅ MERGE con dim_comercial:
+# MAGIC
+# MAGIC Si el equipoComercial cambia, se cierra el registro anterior (fechaHasta = current_date()) y se inserta un nuevo registro con fechaDesde = current_date().
+# MAGIC Si el codComercial no existe, se inserta directamente.
+# MAGIC ✅ Cálculo de esActivo:
+# MAGIC
+# MAGIC Un comercial es activo (1) si no tiene fechaHasta o si fechaDesde ≤ current_date < fechaHasta.
+# MAGIC Es inactivo (0) si su fechaHasta ya ha pasado.
 
 # COMMAND ----------
 
-# DBTITLE 1,Cruze por email
-#%sql
-#CREATE OR REPLACE TEMPORARY VIEW comercial_sales_view AS 
-#SELECT DISTINCT 
-#    TRIM(sales.propietario_lead) AS nombre_comercial,
-#    TRIM(sales.institucion) AS equipo_comercial,
-#    COALESCE(lead.id, NULL) AS cod_comercial,
-#    CURRENT_DATE() AS fecha_Desde,
-#    NULL AS fecha_Hasta,
-#    1 AS activo
-#FROM silver_lakehouse.sales sales
-#LEFT JOIN silver_lakehouse.zoholeads lead
-#    ON UPPER(TRIM(sales.email)) = UPPER(TRIM(lead.email))
-#WHERE TRIM(sales.propietario_lead) IS NOT NULL
-#  AND TRIM(sales.propietario_lead) <> 'n/a';
-#
-#select * from comercial_sales_view 
+# MAGIC %sql
+# MAGIC CREATE OR REPLACE TEMP VIEW dim_comercial_temp_view AS
+# MAGIC SELECT
+# MAGIC     z.id AS cod_Comercial,
+# MAGIC     z.full_name AS nombre_Comercial,
+# MAGIC     z.role_name AS equipo_Comercial,
+# MAGIC     current_date() AS fecha_Desde,
+# MAGIC     NULL AS fecha_Hasta
+# MAGIC FROM silver_lakehouse.zohousers z;
+# MAGIC
+# MAGIC select * from dim_comercial_temp_view;
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC MERGE INTO gold_lakehouse.dim_comercial AS target
+# MAGIC USING dim_comercial_temp_view AS source
+# MAGIC ON target.cod_Comercial = source.cod_Comercial
+# MAGIC WHEN MATCHED AND target.equipo_Comercial <> source.equipo_Comercial THEN
+# MAGIC     -- Cerramos el registro anterior si cambia el equipo comercial
+# MAGIC     UPDATE SET target.fecha_Hasta = current_date()
+# MAGIC WHEN NOT MATCHED THEN
+# MAGIC     -- Insertamos un nuevo comercial si no existe en la dimensión
+# MAGIC     INSERT (cod_Comercial, nombre_Comercial, equipo_Comercial, fecha_Desde, fecha_Hasta)
+# MAGIC     VALUES (source.cod_Comercial, source.nombre_Comercial, source.equipo_Comercial, source.fecha_Desde, source.fecha_Hasta);
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC UPDATE gold_lakehouse.dim_comercial
+# MAGIC SET Activo = CASE 
+# MAGIC     WHEN fecha_Hasta IS NULL OR current_date() BETWEEN fecha_Desde AND fecha_Hasta THEN 1
+# MAGIC     ELSE 0
+# MAGIC END;
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC SELECT nombre_comercial, COUNT(*)
-# MAGIC FROM comercial_sales_view
+# MAGIC FROM dim_comercial_temp_view
 # MAGIC GROUP BY nombre_comercial
 # MAGIC HAVING COUNT(*) > 1;
 

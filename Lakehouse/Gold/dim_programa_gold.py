@@ -8,49 +8,36 @@
 # MAGIC CREATE OR REPLACE TEMPORARY VIEW dim_programa_view AS
 # MAGIC SELECT DISTINCT
 # MAGIC     codigo_programa AS codPrograma,
-# MAGIC     area_title AS nombrePrograma,
-# MAGIC     degree_title AS tipoPrograma,
-# MAGIC     entidad_legal AS entidadLegal,
-# MAGIC     especialidad AS especialidad,
-# MAGIC     vertical AS vertical,
-# MAGIC     nombre_del_programa_oficial_completo AS nombreProgramaCompleto,
+# MAGIC     TRIM(UPPER(area_title)) AS nombrePrograma,
+# MAGIC     TRIM(UPPER(degree_title)) AS tipoPrograma,
+# MAGIC     TRIM(UPPER(entidad_legal)) AS entidadLegal,
+# MAGIC     TRIM(UPPER(especialidad)) AS especialidad,
+# MAGIC     TRIM(UPPER(vertical)) AS vertical,
+# MAGIC     TRIM(UPPER(nombre_del_programa_oficial_completo)) AS nombreProgramaCompleto,
 # MAGIC     MAX(TRY_CAST(fecha_creacion AS TIMESTAMP)) AS ETLcreatedDate,
 # MAGIC     MAX(TRY_CAST(ultima_actualizacion AS TIMESTAMP)) AS ETLupdatedDate
 # MAGIC FROM silver_lakehouse.classlifetitulaciones
 # MAGIC WHERE codigo_programa IS NOT NULL
-# MAGIC GROUP BY codPrograma, nombrePrograma, tipoPrograma, entidadLegal, especialidad, vertical, nombreProgramaCompleto;
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select * from dim_programa_view
+# MAGIC GROUP BY 
+# MAGIC     codPrograma, nombrePrograma, tipoPrograma, entidadLegal, especialidad, vertical, nombreProgramaCompleto;
+# MAGIC
+# MAGIC select * from dim_programa_view limit 25
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC MERGE INTO gold_lakehouse.dim_programa AS target
-# MAGIC USING (
-# MAGIC   SELECT 
-# MAGIC     codPrograma,
-# MAGIC     nombrePrograma,
-# MAGIC     tipoPrograma,
-# MAGIC     entidadLegal,
-# MAGIC     especialidad,
-# MAGIC     vertical,
-# MAGIC     nombreProgramaCompleto,
-# MAGIC     ETLcreatedDate,
-# MAGIC     ETLupdatedDate
-# MAGIC   FROM dim_programa_view
-# MAGIC ) AS source
-# MAGIC ON target.codPrograma = source.codPrograma
+# MAGIC USING dim_programa_view AS source
+# MAGIC ON UPPER(TRIM(target.codPrograma)) = UPPER(TRIM(source.codPrograma)) 
+# MAGIC    AND UPPER(TRIM(target.nombreProgramaCompleto)) = UPPER(TRIM(source.nombreProgramaCompleto))
 # MAGIC
 # MAGIC WHEN MATCHED AND (
-# MAGIC     target.nombrePrograma <> source.nombrePrograma OR
-# MAGIC     target.tipoPrograma <> source.tipoPrograma OR
-# MAGIC     target.entidadLegal <> source.entidadLegal OR
-# MAGIC     target.especialidad <> source.especialidad OR
-# MAGIC     target.vertical <> source.vertical OR
-# MAGIC     target.nombreProgramaCompleto <> source.nombreProgramaCompleto
+# MAGIC     COALESCE(TRIM(UPPER(target.nombrePrograma)), '') <> COALESCE(TRIM(UPPER(source.nombrePrograma)), '') OR
+# MAGIC     COALESCE(TRIM(UPPER(target.tipoPrograma)), '') <> COALESCE(TRIM(UPPER(source.tipoPrograma)), '') OR
+# MAGIC     COALESCE(TRIM(UPPER(target.entidadLegal)), '') <> COALESCE(TRIM(UPPER(source.entidadLegal)), '') OR
+# MAGIC     COALESCE(TRIM(UPPER(target.especialidad)), '') <> COALESCE(TRIM(UPPER(source.especialidad)), '') OR
+# MAGIC     COALESCE(TRIM(UPPER(target.vertical)), '') <> COALESCE(TRIM(UPPER(source.vertical)), '') OR
+# MAGIC     COALESCE(TRIM(UPPER(target.nombreProgramaCompleto)), '') <> COALESCE(TRIM(UPPER(source.nombreProgramaCompleto)), '')
 # MAGIC )
 # MAGIC THEN UPDATE SET
 # MAGIC     target.nombrePrograma = source.nombrePrograma,
@@ -69,12 +56,6 @@
 # MAGIC     source.codPrograma, source.nombrePrograma, source.tipoPrograma, source.entidadLegal, source.especialidad, source.vertical, 
 # MAGIC     source.nombreProgramaCompleto, source.ETLcreatedDate, source.ETLupdatedDate
 # MAGIC   );
-# MAGIC
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC SELECT * FROM gold_lakehouse.dim_programa LIMIT 100;
 
 # COMMAND ----------
 

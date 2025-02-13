@@ -8,6 +8,8 @@ table_name = "JsaZohoUsers"
 zohousers_df = spark.read.json(f"{bronze_folder_path}/lakehouse/zoho/{current_date}/{table_name}.json")
 zohousers_df
 
+print(f"{bronze_folder_path}/lakehouse/zoho/{current_date}/{table_name}.json")
+
 # COMMAND ----------
 
 zohousers_df = zohousers_df.select("users")
@@ -38,6 +40,9 @@ for col in zohousers_df.columns:
 
 # COMMAND ----------
 
+from pyspark.sql.types import StringType, BooleanType, LongType
+from pyspark.sql.functions import col, lit, current_timestamp
+
 # Diccionario para mapear las columnas directamente, manteniendo los nombres originales
 columns_mapping = {
     "current_shift": "current_shift",
@@ -54,6 +59,7 @@ columns_mapping = {
     "created_time": "created_time",
     "date_format": "date_format",
     "decimal_separator": "decimal_separator",
+    "default_tab_group": "default_tab_group",
     "dob": "dob",
     "email": "email",
     "fax": "fax",
@@ -65,35 +71,53 @@ columns_mapping = {
     "locale": "locale",
     "microsoft": "microsoft",
     "mobile": "mobile",
+    "name_format__s": "name_format",
     "number_separator": "number_separator",
     "offset": "offset",
+    "personal_account": "personal_account",
     "phone": "phone",
     "sandboxdeveloper": "sandboxdeveloper",
+    "signature": "signature",
+    "sort_order_preference__s": "sort_order_preference",
     "state": "state",
-    "status_reason__s": "status_reason__s",
+    "status": "status",
+    "status_reason__s": "status_reason",
     "street": "street",
     "time_format": "time_format",
     "time_zone": "time_zone",
+    "type__s": "type",
     "website": "website",
     "zip": "zip",
     "zuid": "zuid",
     "modified_by_id": "modified_by_id",
     "modified_by_name": "modified_by_name",
     "created_by_id": "created_by_id",
-    "created_by_name": "created_by_name"
+    "created_by_name": "created_by_name",
+    "profile_id": "profile_id",
+    "profile_name": "profile_name",
+    "role_id": "role_id",
+    "role_name": "role_name",
 }
 
-# Renombrar columnas dinámicamente (en este caso, no cambiarán porque el mapeo es 1 a 1)
+# Renombrar columnas dinámicamente
 for old_col, new_col in columns_mapping.items():
     if old_col in zohousers_df.columns:
         zohousers_df = zohousers_df.withColumnRenamed(old_col, new_col)
 
+# Seleccionar solo las columnas necesarias después de renombrarlas
+selected_columns = list(columns_mapping.values())
+
+# Filtrar el DataFrame solo con las columnas deseadas
+zohousers_df = zohousers_df.select(*selected_columns)
+
+# Agregar columnas adicionales (si es necesario)
+zohousers_df = zohousers_df \
+    .withColumn("processdate", current_timestamp()) \
+    .withColumn("sourcesystem", lit("zoho_Users"))
+
 # Mostrar el DataFrame resultante
 display(zohousers_df)
 
-# COMMAND ----------
-
-display(zohousers_df)
 
 # COMMAND ----------
 
@@ -118,6 +142,7 @@ zohousers_df = zohousers_df \
     .withColumn("created_time", to_timestamp(col("created_time"), "yyyy-MM-dd'T'HH:mm:ssXXX")) \
     .withColumn("date_format", col("date_format").cast(StringType())) \
     .withColumn("decimal_separator", col("decimal_separator").cast(StringType())) \
+    .withColumn("default_tab_group", col("default_tab_group").cast(StringType())) \
     .withColumn("dob", to_date(col("dob"), "yyyy-MM-dd")) \
     .withColumn("email", col("email").cast(StringType())) \
     .withColumn("fax", col("fax").cast(StringType())) \
@@ -129,26 +154,35 @@ zohousers_df = zohousers_df \
     .withColumn("locale", col("locale").cast(StringType())) \
     .withColumn("microsoft", col("microsoft").cast(BooleanType())) \
     .withColumn("mobile", col("mobile").cast(StringType())) \
+    .withColumn("name_format", col("name_format").cast(StringType())) \
     .withColumn("number_separator", col("number_separator").cast(StringType())) \
     .withColumn("offset", col("offset").cast(LongType())) \
+    .withColumn("personal_account", col("personal_account").cast(BooleanType())) \
     .withColumn("phone", col("phone").cast(StringType())) \
     .withColumn("sandboxdeveloper", col("sandboxdeveloper").cast(BooleanType())) \
+    .withColumn("signature", col("signature").cast(StringType())) \
+    .withColumn("sort_order_preference", col("sort_order_preference").cast(StringType())) \
     .withColumn("state", col("state").cast(StringType())) \
-    .withColumn("status_reason__s", col("status_reason__s").cast(StringType())) \
+    .withColumn("status", col("status").cast(StringType())) \
+    .withColumn("status_reason", col("status_reason").cast(StringType())) \
     .withColumn("street", col("street").cast(StringType())) \
     .withColumn("time_format", col("time_format").cast(StringType())) \
     .withColumn("time_zone", col("time_zone").cast(StringType())) \
+    .withColumn("type", col("type").cast(StringType())) \
     .withColumn("website", col("website").cast(StringType())) \
     .withColumn("zip", col("zip").cast(StringType())) \
     .withColumn("zuid", col("zuid").cast(StringType())) \
     .withColumn("modified_by_id", col("modified_by_id").cast(StringType())) \
     .withColumn("modified_by_name", col("modified_by_name").cast(StringType())) \
     .withColumn("created_by_id", col("created_by_id").cast(StringType())) \
-    .withColumn("created_by_name", col("created_by_name").cast(StringType()))
+    .withColumn("created_by_name", col("created_by_name").cast(StringType())) \
+    .withColumn("profile_id", col("profile_id").cast(StringType())) \
+    .withColumn("profile_name", col("profile_name").cast(StringType())) \
+    .withColumn("role_id", col("role_id").cast(StringType())) \
+    .withColumn("role_name", col("role_name").cast(StringType()))
 
 # Mostrar el DataFrame final
 display(zohousers_df)
-
 
 # COMMAND ----------
 

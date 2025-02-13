@@ -1,7 +1,9 @@
 # Databricks notebook source
 # MAGIC %sql
 # MAGIC CREATE OR REPLACE TEMPORARY VIEW silver_venta_view
-# MAGIC     AS SELECT * FROM silver_lakehouse.sales where fec_procesamiento > (select IFNULL(max(fec_procesamiento),'1900-01-01') from gold_lakehouse.fct_venta)
+# MAGIC     AS SELECT * FROM silver_lakehouse.sales where fec_procesamiento > (select IFNULL(max(fec_procesamiento),'1900-01-01') from gold_lakehouse.fct_venta);
+# MAGIC
+# MAGIC
 
 # COMMAND ----------
 

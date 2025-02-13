@@ -7,6 +7,7 @@ table_name = "JsaZohoLeads"
 
 zoholeads_df = spark.read.json(f"{bronze_folder_path}/lakehouse/zoho/{current_date}/{table_name}.json")
 zoholeads_df
+print(f"{bronze_folder_path}/lakehouse/zoho/{current_date}/{table_name}.json")
 
 # COMMAND ----------
 
@@ -103,10 +104,12 @@ display(zoholeads_df)
 
 # COMMAND ----------
 
+# DBTITLE 1,Display dataframe
 display(zoholeads_df)
 
 # COMMAND ----------
 
+# DBTITLE 1,Nombrar columnas
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
 
@@ -126,7 +129,7 @@ zoholeads_df = zoholeads_df \
     .withColumn("visitor_score", col("visitor_score").cast(StringType())) \
     .withColumn("sexo", col("sexo").cast(StringType())) \
     .withColumn("tipologia_cliente", col("tipologia_cliente").cast(StringType())) \
-    .withColumn("type_conversion", col("tipo_conversion").cast(StringType())) \
+    .withColumn("tipo_conversion", col("tipo_conversion").cast(StringType())) \
     .withColumn("residencia", col("residencia").cast(StringType())) \
     .withColumn("provincia", col("provincia").cast(StringType())) \
     .withColumn("motivos_perdida", col("motivos_perdida").cast(StringType())) \
@@ -140,16 +143,20 @@ zoholeads_df = zoholeads_df \
     .withColumn("utm_term", col("utm_term").cast(StringType())) \
     .withColumn("utm_channel", col("utm_channel").cast(StringType())) \
     .withColumn("utm_type", col("utm_type").cast(StringType())) \
-    .withColumn("utm_estrategia", col("utm_strategy").cast(StringType())) \
+    .withColumn("utm_strategy", col("utm_strategy").cast(StringType())) \
+    .withColumn("utm_profile", col("utm_profile").cast(StringType())) \
     .withColumn("google_click_id", col("google_click_id").cast(StringType())) \
     .withColumn("facebook_click_id", col("facebook_click_id").cast(StringType())) \
     .withColumn("id_producto", col("id_producto").cast(StringType())) \
     .withColumn("id_programa", col("id_programa").cast(StringType())) \
-    .withColumn("id_correlacion_prospecto", col("lead_correlation_id").cast(StringType()))
+    .withColumn("id_correlacion_prospecto", col("lead_correlation_id").cast(StringType())) \
+    .withColumn("description", col("description").cast(StringType())) \
+    .withColumn("phone", col("phone").cast(StringType())) \
+    .withColumn("device", col("device").cast(StringType())) \
+    .withColumn("source", col("source").cast(StringType()))
 
 # Display final DataFrame
 display(zoholeads_df)
-
 
 # COMMAND ----------
 
@@ -187,3 +194,8 @@ zoholeads_df.createOrReplaceTempView("zoholeads_source_view")
 # MAGIC ON silver_lakehouse.zoholeads.id = zoholeads_source_view.id
 # MAGIC WHEN MATCHED THEN UPDATE SET *
 # MAGIC WHEN NOT MATCHED THEN INSERT *
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from silver_lakehouse.zoholeads

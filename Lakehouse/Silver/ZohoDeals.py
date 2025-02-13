@@ -56,7 +56,7 @@ columns_mapping = {
     "data_fecha_hora_documentaci_n_completada": "fecha_hora_documentacion_completada",
     "data_fecha_hora_pagado_ne": "fecha_hora_pagado",
     "data_id_classlife": "id_classlife",
-    "data_id_lead": "id_prospecto",
+    "data_id_lead": "id_lead",
     "data_id_producto": "id_producto",
     "data_importe_pagado": "importe_pagado",
     "data_modified_time": "modified_time",
@@ -125,7 +125,7 @@ zohodeals_df = zohodeals_df \
     .withColumn("fecha_hora_documentacion_completada", to_timestamp(col("fecha_hora_documentacion_completada"), "yyyy-MM-dd'T'HH:mm:ssXXX")) \
     .withColumn("fecha_hora_pagado", to_timestamp(col("fecha_hora_pagado"), "yyyy-MM-dd'T'HH:mm:ssXXX")) \
     .withColumn("id_classlife", col("id_classlife").cast(StringType())) \
-    .withColumn("id_prospecto", col("id_prospecto").cast(StringType())) \
+    .withColumn("id_lead", col("id_lead").cast(StringType())) \
     .withColumn("id_producto", col("id_producto").cast(StringType())) \
     .withColumn("importe_pagado", col("importe_pagado").cast(DoubleType())) \
     .withColumn("modified_time", to_timestamp(col("modified_time"), "yyyy-MM-dd'T'HH:mm:ssXXX")) \

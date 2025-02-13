@@ -14,6 +14,8 @@ classlifetitulaciones_df
 print("📌 Esquema inicial antes de limpieza:")
 classlifetitulaciones_df.printSchema()
 
+display(classlifetitulaciones_df)
+
 # COMMAND ----------
 
 # MAGIC %md
@@ -27,6 +29,8 @@ classlifetitulaciones_df.printSchema()
 # 📌 Inspeccionar Esquema Inicial
 print("📌 Esquema inicial antes de limpieza:")
 classlifetitulaciones_df.printSchema()
+
+display(classlifetitulaciones_df)
 
 # COMMAND ----------
 
@@ -51,6 +55,8 @@ def clean_column_names(df):
     
     return df
 
+display(classlifetitulaciones_df)
+
 # COMMAND ----------
 
 # 📌 Extraer el contenido de `data` si existe
@@ -61,6 +67,8 @@ if "data" in classlifetitulaciones_df.columns:
 print("📌 Esquema después de seleccionar `data.*`:")
 classlifetitulaciones_df.printSchema()
 
+display(classlifetitulaciones_df)
+
 # COMMAND ----------
 
 # 📌 Explotar `items` si es un array
@@ -70,12 +78,16 @@ if "items" in classlifetitulaciones_df.columns:
     # Si `items` es un array de estructuras, lo explotamos
     if isinstance(classlifetitulaciones_df.schema["items"].dataType, ArrayType):
         classlifetitulaciones_df = classlifetitulaciones_df.withColumn("items", explode(col("items")))
+    
+display(classlifetitulaciones_df)
 
 # COMMAND ----------
 
 # 📌 Verificar esquema después de explotar `items`
 print("📌 Esquema después de explotar `items`:")
 classlifetitulaciones_df.printSchema()
+
+display(classlifetitulaciones_df)
 
 # COMMAND ----------
 
@@ -92,6 +104,8 @@ if "items" in classlifetitulaciones_df.columns:
     # 📌 Extraer columnas de `items` y renombrarlas
     classlifetitulaciones_df = classlifetitulaciones_df.select(*[col(c).alias(c.replace("items.", "")) for c in clean_subcolumns])
 
+    display(classlifetitulaciones_df)
+
 # COMMAND ----------
 
 # 📌 Inspeccionar después de desanidar `items`
@@ -102,11 +116,15 @@ classlifetitulaciones_df.printSchema()
 # 📌 Aplicar limpieza de nombres de columnas
 classlifetitulaciones_df = clean_column_names(classlifetitulaciones_df)
 
+display(classlifetitulaciones_df)
+
 # COMMAND ----------
 
 # 📌 Inspeccionar después de limpiar nombres de columnas
 print("📌 Esquema después de limpiar nombres de columnas:")
 classlifetitulaciones_df.printSchema()
+
+display(classlifetitulaciones_df)
 
 # COMMAND ----------
 
@@ -119,25 +137,32 @@ if "metas" in classlifetitulaciones_df.columns:
     metas_cols = classlifetitulaciones_df.select("metas.*").columns
     classlifetitulaciones_df = classlifetitulaciones_df.select("*", *[col(f"metas.{c}").alias(f"metas_{c}") for c in metas_cols]).drop("metas")
 
+display(classlifetitulaciones_df)
+
 # COMMAND ----------
 
 # 📌 Inspeccionar después de expandir estructuras internas
 print("📌 Esquema final después de desanidar estructuras:")
 classlifetitulaciones_df.printSchema()
 
+display(classlifetitulaciones_df)
+
 # COMMAND ----------
 
 from pyspark.sql.functions import col, to_date, to_timestamp, lit, current_timestamp
-from pyspark.sql.types import StringType, IntegerType, DoubleType, StructField, StructType
+from pyspark.sql.types import StringType
 
 def clean_column_names(df):
     """
-    Limpia los nombres de columnas eliminando espacios, tildes, caracteres especiales
+    Limpia los nombres de columnas eliminando espacios, tildes, caracteres especiales,
     y asegurando un formato estándar.
     """
+    cleaned_columns = {}
+    
     for old_col in df.columns:
         new_col = (
             old_col.lower()
+            .strip()  # 📌 Elimina espacios al inicio y fin
             .replace(" ", "_")
             .replace(".", "_")
             .replace("ñ", "n")
@@ -146,90 +171,147 @@ def clean_column_names(df):
             .replace("é", "e")
             .replace("í", "i")
             .replace("ú", "u")
+            .replace("`", "")
+            .replace("metas_", "")
+            .replace("counters_", "")
+            .replace("no__", "no_")
         )
+
+        # Evitar nombres duplicados
+        if new_col in cleaned_columns.values():
+            print(f"⚠️ Nombre duplicado detectado: {new_col}, renombrando...")
+            new_col += "_2"
+
+        cleaned_columns[old_col] = new_col
+
+    # Aplicar los cambios
+    for old_col, new_col in cleaned_columns.items():
         df = df.withColumnRenamed(old_col, new_col)
-    
+
     return df
+
+# 📌 Inspeccionar nombres antes de la limpieza
+print("📌 Columnas antes de renombramiento:")
+for col_name in classlifetitulaciones_df.columns:
+    print(f"- '{repr(col_name)}'")  # 📌 Usa repr() para detectar caracteres invisibles
 
 # 📌 Aplicar limpieza de nombres de columnas
 classlifetitulaciones_df = clean_column_names(classlifetitulaciones_df)
 
-# 📌 Renombrar columnas eliminando los prefijos "metas_" y "counters_"
-renamed_columns = {}
+# 📌 Mostrar columnas después de la limpieza para verificar cambios
+print("\n📌 Columnas después de renombramiento:")
 for col_name in classlifetitulaciones_df.columns:
-    new_col_name = col_name.replace("metas_", "").replace("counters_", "")
-    if new_col_name not in renamed_columns.values():
-        renamed_columns[col_name] = new_col_name
+    print(f"- '{repr(col_name)}'")  # 📌 Usa repr() nuevamente para comparación
 
-# 📌 Aplicar el renombramiento solo si el nombre no está repetido
-for old_col, new_col in renamed_columns.items():
-    classlifetitulaciones_df = classlifetitulaciones_df.withColumnRenamed(old_col, new_col)
-
-# 📌 Lista de columnas a convertir en fecha (formato 'dd/MM/yyyy')
-date_columns = [
-    "fecha_inicio_docencia", "fecha_fin_cuotas", "fecha_fin_reconocimiento_ingresos",
-    "fecha_inicio_reconocimiento_ingresos", "fecha_fin_docencia", "fecha_inicio_cuotas"
-]
-
-for col_name in date_columns:
-    classlifetitulaciones_df = classlifetitulaciones_df.withColumn(col_name, to_date(col(col_name), "dd/MM/yyyy"))
-
-# 📌 Convertir `fecha_creacion` y `ultima_actualizacion` a TIMESTAMP asegurando el formato correcto
-datetime_columns = ["fecha_creacion", "ultima_actualizacion"]
-
-for col_name in datetime_columns:
-    classlifetitulaciones_df = classlifetitulaciones_df.withColumn(col_name, 
-        to_timestamp(col(col_name), "yyyy-MM-dd HH:mm:ss")
-    )
-
-# 📌 Agregar columnas `processdate` y `sourceSystem`
-classlifetitulaciones_df = classlifetitulaciones_df.withColumn("processdate", current_timestamp())
-classlifetitulaciones_df = classlifetitulaciones_df.withColumn("sourceSystem", lit("classlifetitulaciones"))
-
-# 📌 Lista de columnas finales después de limpiar prefijos y evitar duplicados
-columnas_finales = [
-    "ano_inicio_docencia", "certificado_euneiz_incluido", "cuotas_docencia", "entidad_legal", 
-    "entidad_legal_codigo", "fecha_fin_pago", "fecha_inicio_pago", "fecha_fin", "fecha_inicio", 
-    "grupo", "horas_acreditadas", "horas_presenciales", "mes_inicio_docencia", "meses_duracion", 
-    "modalidad", "no_ultimas_plazas", "sede", "tarifa_ampliacion", "tarifa_docencia", "tarifa_euneiz", 
-    "tarifa_matricula", "total_tarifas", "vertical", "acreditado", "admisionsino", "area_id", 
-    "area_title", "building_id", "building_title", "ciclo_id", "ciclo_title", "codigo_antiguo", 
-    "codigo_especialidad", "codigo_programa", "codigo_vertical", "creditos", "degree_id", 
-    "degree_title", "descripcion_calendario", "destinatarios", "enroll_alias", "enroll_end", 
-    "enroll_group_id", "enroll_group_name", "enroll_ini", "especialidad", "fecha_creacion", 
-    "modalidad_code", "nombre_antiguo_de_programa", "nombre_del_programa_oficial_completo", 
-    "nombreweb", "plan_id", "plan_title", "plazas", "school_id", "school_name", "section_id", 
-    "section_title", "term_id", "term_title", "tiponegocio", "ultima_actualizacion", "year", 
-    "availables", "enroll_group_id", "enrolled", "pre_enrolled", "seats", "admisionsino", 
-    "ano_inicio_docencia", "building", "certificado_euneiz_incluido", "codigo_entidad_legal", 
-    "codigo_modalidad", "codigo_sede", "codigo_vertical", "descripcion_calendario", "enroll_pago_ini_t", 
-    "excludeSecurityArrayMetas", "fecha_fin_cuotas", "fecha_fin_docencia", 
-    "fecha_fin_reconocimiento_ingresos", "fecha_inicio_cuotas", "fecha_inicio_docencia", 
-    "fecha_inicio_reconocimiento_ingresos", "grupo", "grupos_cerrados", "horas_acreditadas", 
-    "horas_presenciales", "mes_inicio_docencia", "mesesAmpliacion", "meses_cursos_open", 
-    "num_alumnos_inscritos", "num_plazas", "num_plazas_ultimas", "receipts_count", "roaster_ind", 
-    "tiponegocio", "processdate", "sourceSystem"
-]
-
-# 📌 Asegurar que todas las columnas están presentes, incluso si están vacías
+# 📌 Verificar si `tarifa_matricula` existe en el DataFrame después de la limpieza
 columnas_actuales = set(classlifetitulaciones_df.columns)
-columnas_faltantes = [col for col in columnas_finales if col not in columnas_actuales]
 
-# 📌 Agregar columnas faltantes con valores `None`
-for col_name in columnas_faltantes:
-    classlifetitulaciones_df = classlifetitulaciones_df.withColumn(col_name, lit(None).cast(StringType()))
+if "tarifa_matricula" not in columnas_actuales:
+    print("⚠️ `tarifa_matricula` NO se encuentra en el DataFrame después del renombramiento.")
+    print("🔍 Buscando nombres similares:")
+    for col_name in columnas_actuales:
+        if "tarifa" in col_name:
+            print(f"🔍 Posible coincidencia: {repr(col_name)}")
 
-# 📌 Verificar que todas las columnas requeridas están presentes ahora
-columnas_actualizadas = set(classlifetitulaciones_df.columns)
-faltantes_despues = [col for col in columnas_finales if col not in columnas_actualizadas]
+# 📌 Seleccionar solo las columnas válidas si existen
+columnas_seleccionadas = list(columnas_actuales)
 
-if faltantes_despues:
-    print("⚠️ Aún faltan las siguientes columnas:", faltantes_despues)
+# 📌 Solución para nombres con comillas invertidas
+# Aplicamos alias() para normalizar los nombres con comillas invertidas
+classlifetitulaciones_df = classlifetitulaciones_df.select(
+    *[col(c).alias(c.strip().replace("`", "")) for c in columnas_seleccionadas]
+)
+
+# 📌 Verificar si `tarifa_matricula` ahora está accesible
+if "tarifa_matricula" in classlifetitulaciones_df.columns:
+    print("✅ `tarifa_matricula` ahora está disponible correctamente.")
 else:
-    print("✅ Todas las columnas requeridas están presentes en el DataFrame.")
+    print("❌ ERROR: `tarifa_matricula` sigue sin encontrarse en el DataFrame.")
 
-# 📌 Seleccionar solo las columnas esperadas en el orden correcto
-classlifetitulaciones_df = classlifetitulaciones_df.select(*columnas_finales)
+# 📌 Mostrar los primeros registros
+display(classlifetitulaciones_df)
+
+# COMMAND ----------
+
+from pyspark.sql.functions import col, to_date, to_timestamp, lit, current_timestamp, from_unixtime
+from pyspark.sql.types import StringType, IntegerType, DoubleType
+
+# 📌 Aplicar transformaciones a las columnas
+classlifetitulaciones_df = classlifetitulaciones_df \
+    .withColumn("processdate", current_timestamp()) \
+    .withColumn("sourcesystem", lit("classlifetitulaciones")) \
+    .withColumn("fecha_inicio_docencia", to_date(col("fecha_inicio_docencia"), "dd/MM/yyyy")) \
+    .withColumn("fecha_inicio", to_date(col("fecha_inicio"), "dd/MM/yyyy")) \
+    .withColumn("fecha_fin_pago", to_date(col("fecha_fin_pago"), "dd/MM/yyyy")) \
+    .withColumn("fecha_inicio_cuotas", to_date(col("fecha_inicio_cuotas"), "dd/MM/yyyy")) \
+    .withColumn("fecha_fin", to_date(col("fecha_fin"), "dd/MM/yyyy")) \
+    .withColumn("fecha_fin_cuotas", to_date(col("fecha_fin_cuotas"), "dd/MM/yyyy")) \
+    .withColumn("fecha_fin_reconocimiento_ingresos", to_date(col("fecha_fin_reconocimiento_ingresos"), "dd/MM/yyyy")) \
+    .withColumn("fecha_inicio_reconocimiento_ingresos", to_date(col("fecha_inicio_reconocimiento_ingresos"), "dd/MM/yyyy")) \
+    .withColumn("fecha_fin_docencia", to_date(col("fecha_fin_docencia"), "dd/MM/yyyy")) \
+    .withColumn("fecha_creacion", to_timestamp(col("fecha_creacion"), "yyyy-MM-dd HH:mm:ss")) \
+    .withColumn("ultima_actualizacion", to_timestamp(col("ultima_actualizacion"), "yyyy-MM-dd HH:mm:ss")) \
+    .withColumn("enroll_end", to_timestamp(col("enroll_end"), "yyyy-MM-dd HH:mm:ss")) \
+    .withColumn("enroll_ini", to_timestamp(col("enroll_ini"), "yyyy-MM-dd HH:mm:ss")) \
+    .withColumn("horas_acreditadas", col("horas_acreditadas").cast(IntegerType())) \
+    .withColumn("horas_presenciales", col("horas_presenciales").cast(IntegerType())) \
+    .withColumn("horas_presenciales_2", col("horas_presenciales_2").cast(IntegerType())) \
+    .withColumn("num_plazas", col("num_plazas").cast(IntegerType())) \
+    .withColumn("num_plazas_ultimas", col("num_plazas_ultimas").cast(IntegerType())) \
+    .withColumn("pre_enrolled", col("pre_enrolled").cast(IntegerType())) \
+    .withColumn("tarifa_ampliacion", col("tarifa_ampliacion").cast(DoubleType())) \
+    .withColumn("tarifa_euneiz", col("tarifa_euneiz").cast(DoubleType())) \
+    .withColumn("tarifa_matricula", col("tarifa_matricula").cast(DoubleType())) \
+    .withColumn("tarifa_docencia", col("tarifa_docencia").cast(DoubleType())) \
+    .withColumn("total_tarifas", col("total_tarifas").cast(DoubleType())) \
+    .withColumn("num_alumnos_inscritos", col("num_alumnos_inscritos").cast(IntegerType())) \
+    .withColumn("creditos", col("creditos").cast(DoubleType())) \
+    .withColumn("availables", col("availables").cast(IntegerType())) \
+    .withColumn("enrolled", col("enrolled").cast(IntegerType())) \
+    .withColumn("seats", col("seats").cast(IntegerType())) \
+    .withColumn("cuotas_docencia", col("cuotas_docencia").cast(IntegerType())) \
+    .withColumn("receipts_count", col("receipts_count").cast(IntegerType())) \
+    .withColumn("roaster_ind", col("roaster_ind").cast(IntegerType())) \
+    .withColumn("admisionsino", col("admisionsino").cast(StringType())) \
+    .withColumn("certificado_euneiz_incluido", col("certificado_euneiz_incluido").cast(StringType())) \
+    .withColumn("certificado_euneiz_incluido_2", col("certificado_euneiz_incluido_2").cast(StringType())) \
+    .withColumn("admisionsino_2", col("admisionsino_2").cast(StringType())) \
+    .withColumn("tiponegocio", col("tiponegocio").cast(StringType())) \
+    .withColumn("tiponegocio_2", col("tiponegocio_2").cast(StringType())) \
+    .withColumn("codigo_antiguo", col("codigo_antiguo").cast(StringType())) \
+    .withColumn("codigo_especialidad", col("codigo_especialidad").cast(StringType())) \
+    .withColumn("codigo_programa", col("codigo_programa").cast(StringType())) \
+    .withColumn("codigo_vertical", col("codigo_vertical").cast(StringType())) \
+    .withColumn("codigo_vertical_2", col("codigo_vertical_2").cast(StringType())) \
+    .withColumn("codigo_modalidad", col("codigo_modalidad").cast(StringType())) \
+    .withColumn("codigo_sede", col("codigo_sede").cast(StringType())) \
+    .withColumn("codigo_entidad_legal", col("codigo_entidad_legal").cast(StringType())) \
+    .withColumn("modalidad_code", col("modalidad_code").cast(StringType())) \
+    .withColumn("area_id", col("area_id").cast(IntegerType())) \
+    .withColumn("area_title", col("area_title").cast(StringType())) \
+    .withColumn("degree_id", col("degree_id").cast(IntegerType())) \
+    .withColumn("degree_title", col("degree_title").cast(StringType())) \
+    .withColumn("plan_id", col("plan_id").cast(IntegerType())) \
+    .withColumn("plan_title", col("plan_title").cast(StringType())) \
+    .withColumn("school_id", col("school_id").cast(IntegerType())) \
+    .withColumn("school_name", col("school_name").cast(StringType())) \
+    .withColumn("section_id", col("section_id").cast(IntegerType())) \
+    .withColumn("section_title", col("section_title").cast(StringType())) \
+    .withColumn("term_id", col("term_id").cast(IntegerType())) \
+    .withColumn("term_title", col("term_title").cast(StringType())) \
+    .withColumn("building_id", col("building_id").cast(IntegerType())) \
+    .withColumn("building_title", col("building_title").cast(StringType())) \
+    .withColumn("building", col("building").cast(StringType())) \
+    .withColumn("enroll_group_id", col("enroll_group_id").cast(IntegerType())) \
+    .withColumn("enroll_group_name", col("enroll_group_name").cast(StringType())) \
+    .withColumn("enroll_alias", col("enroll_alias").cast(StringType())) \
+    .withColumn("especialidad", col("especialidad").cast(StringType())) \
+    .withColumn("destinatarios", col("destinatarios").cast(StringType())) \
+    .withColumn("descripcion_calendario", col("descripcion_calendario").cast(StringType())) \
+    .withColumn("descripcion_calendario_2", col("descripcion_calendario_2").cast(StringType())) \
+    .withColumn("nombre_antiguo_de_programa", col("nombre_antiguo_de_programa").cast(StringType())) \
+    .withColumn("nombre_del_programa_oficial_completo", col("nombre_del_programa_oficial_completo").cast(StringType())) \
+    .withColumn("nombreweb", col("nombreweb").cast(StringType())) 
 
 # 📌 Mostrar los primeros registros
 display(classlifetitulaciones_df)
@@ -248,7 +330,6 @@ classlifetitulaciones_df.createOrReplaceTempView("classlifetitulaciones_view")
 # MAGIC     UPDATE SET *
 # MAGIC WHEN NOT MATCHED THEN 
 # MAGIC     INSERT *;
-# MAGIC
 
 # COMMAND ----------
 
