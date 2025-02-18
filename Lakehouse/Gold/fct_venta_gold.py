@@ -178,144 +178,93 @@ fct_venta_df = fct_venta_df.dropDuplicates()
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC CREATE OR REPLACE TEMPORARY VIEW producto_con_institucion AS
-# MAGIC SELECT 
-# MAGIC     p.codProducto,  
-# MAGIC     COALESCE(i.id_dim_institucion, 1) AS id_dim_institucion  -- Si no hay match, asigna un valor por defecto
-# MAGIC FROM gold_lakehouse.dim_producto p
-# MAGIC LEFT JOIN gold_lakehouse.dim_institucion i 
-# MAGIC ON UPPER(TRIM(p.entidadLegal)) = UPPER(TRIM(i.nombre_institucion));  -- Normaliza el match
-# MAGIC
-# MAGIC select * from producto_con_institucion;
-
-# COMMAND ----------
-
 # DBTITLE 1,Cruce Zoho
 # MAGIC %sql
 # MAGIC CREATE OR REPLACE TEMPORARY VIEW zoho_table_view AS
 # MAGIC SELECT 
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN leads.id  -- Con lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN leads.id  -- Con lead y con oportunidad
-# MAGIC         ELSE NULL  -- Oportunidad sin lead
-# MAGIC     END AS cod_lead,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN deals.id_lead  -- Con lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN deals.id_lead  -- Con lead y con oportunidad
-# MAGIC         WHEN leads.id IS NULL THEN deals.id_lead  -- Oportunidad sin lead
-# MAGIC     END AS cod_oportunidad,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN leads.Description  -- Con lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN deals.Deal_name  -- Con lead y con oportunidad
-# MAGIC         WHEN leads.id IS NULL THEN deals.Deal_name  -- Oportunidad sin lead
-# MAGIC     END AS nombre,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN leads.email  -- Con lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN contacts.email  -- Con lead y con oportunidad
-# MAGIC         WHEN leads.id IS NULL THEN contacts.email  -- Oportunidad sin lead
-# MAGIC     END AS email,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN leads.mobile  -- Con lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN contacts.phone  -- Con lead y con oportunidad
-# MAGIC         WHEN leads.id IS NULL THEN contacts.phone  -- Oportunidad sin lead
-# MAGIC     END AS telefono,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN CONCAT(leads.first_name, ' ', leads.last_name)  -- Con lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN CONCAT(contacts.first_name, ' ', contacts.last_name)  -- Con lead y con oportunidad
-# MAGIC         WHEN leads.id IS NULL THEN CONCAT(contacts.first_name, ' ', contacts.last_name)  -- Oportunidad sin lead
-# MAGIC     END AS nombre_contacto,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN 0  -- Con lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN deals.importe  -- Con lead y con oportunidad
-# MAGIC         WHEN leads.id IS NULL THEN deals.importe  -- Oportunidad sin lead
-# MAGIC     END AS importe_venta,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN 0   -- Con lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN deals.descuento  -- Con lead y con oportunidad
-# MAGIC         WHEN leads.id IS NULL THEN deals.descuento  -- Oportunidad sin lead
-# MAGIC     END AS importe_descuento,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN 0   -- Con lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN (deals.importe - deals.descuento)  -- Con lead y con oportunidad
-# MAGIC         WHEN leads.id IS NULL THEN (deals.importe - deals.descuento)  -- Oportunidad sin lead
-# MAGIC     END AS importe_venta_neta,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN NULL  
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN deals.probabilidad  
-# MAGIC         WHEN leads.id IS NULL THEN deals.probabilidad  
-# MAGIC     END AS posibilidad_venta,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN leads.modified_time  
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN deals.modified_time  
-# MAGIC         WHEN leads.id IS NULL THEN deals.modified_time  
-# MAGIC     END AS fec_creacion,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN leads.modified_time  
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN deals.modified_time  
-# MAGIC         WHEN leads.id IS NULL THEN deals.modified_time  
-# MAGIC     END AS fec_modificacion,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN NULL  
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN deals.fecha_cierre  
-# MAGIC         WHEN leads.id IS NULL THEN deals.fecha_cierre  
-# MAGIC     END AS fec_cierre,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN NULL  
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN deals.fecha_hora_pagado  
-# MAGIC         WHEN leads.id IS NULL THEN deals.fecha_hora_pagado  
-# MAGIC     END AS fec_pago_matricula,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN leads.lead_rating  
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN leads.lead_rating  
-# MAGIC         WHEN leads.id IS NULL THEN NULL  
-# MAGIC     END AS nombre_scoring,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN leads.lead_scoring  
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN leads.lead_scoring  
-# MAGIC         WHEN leads.id IS NULL THEN NULL  
-# MAGIC     END AS puntos_scoring,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN DATE_DIFF(deals.fecha_cierre, leads.modified_time)    
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN DATE_DIFF(deals.fecha_cierre, leads.modified_time)  
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN DATE_DIFF(deals.fecha_cierre, leads.modified_time)    
-# MAGIC     END AS dias_cierre,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN leads.motivos_perdida  -- Con lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN COALESCE(deals.motivo_perdida_b2b, deals.motivo_perdida_b2c)  -- Con lead y con oportunidad
-# MAGIC         WHEN leads.id IS NULL AND deals.id_lead IS NOT NULL THEN COALESCE(deals.motivo_perdida_b2b, deals.motivo_perdida_b2c)  -- Oportunidad sin lead
-# MAGIC     END AS motivo_perdida_mapeado,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN leads.lead_status  -- Con lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN deals.etapa  -- Con lead y con oportunidad
-# MAGIC         WHEN leads.id IS NULL AND deals.id_lead IS NOT NULL THEN deals.etapa  -- Oportunidad sin lead
-# MAGIC     END AS etapa_venta_mapeada,  -- Mapeo de la etapa de venta
+# MAGIC       tablon.id_tipo_registro
+# MAGIC      ,tablon.tipo_registro
+# MAGIC      ,CASE 
+# MAGIC          WHEN tablon.id_tipo_registro = 1 THEN cod_Lead
+# MAGIC          WHEN tablon.id_tipo_registro = 2 THEN cod_Lead
+# MAGIC          WHEN tablon.id_tipo_registro = 3 THEN NULL
+# MAGIC          ELSE NULL
+# MAGIC       END AS cod_Lead
+# MAGIC      ,tablon.cod_Oportunidad
+# MAGIC      ,COALESCE(Nombre, nombre_Oportunidad) AS nombre
+# MAGIC      ,COALESCE(
 # MAGIC         CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN leads.id  -- Con lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN deals.id  -- Con lead y con oportunidad
-# MAGIC         WHEN leads.id IS NULL AND deals.id_lead IS NOT NULL THEN deals.id  -- Oportunidad sin lead
-# MAGIC     END AS propietario_lead_mapeado,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN 0  -- Lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN deals.descuento  -- Lead con oportunidad
-# MAGIC         WHEN leads.id IS NULL AND deals.id_lead IS NOT NULL THEN deals.descuento  -- Oportunidad sin lead
-# MAGIC     END AS importeDescuentoMatricula,
-# MAGIC     CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN 0  -- Lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN deals.importe  -- Lead con oportunidad
-# MAGIC         WHEN leads.id IS NULL AND deals.id_lead IS NOT NULL THEN deals.importe  -- Oportunidad sin lead
-# MAGIC     END AS importeNetoMatricula,
+# MAGIC             WHEN tablon.id_tipo_registro = 1 THEN tablon.email  -- Email de LEAD
+# MAGIC         END, 
+# MAGIC         contacts.email  -- Email de CONTACT
+# MAGIC      ) AS email
+# MAGIC      ,COALESCE(
 # MAGIC         CASE 
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN importeDescuentoMatricula + importeNetoMatricula  -- Lead sin oportunidad
-# MAGIC         WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN importeDescuentoMatricula + importeNetoMatricula  -- Lead con oportunidad
-# MAGIC         WHEN leads.id IS NULL AND deals.id_lead IS NOT NULL THEN importeDescuentoMatricula + importeNetoMatricula  -- Oportunidad sin lead
-# MAGIC     END AS importeMatricula,
-# MAGIC     deals.id_producto
-# MAGIC FROM silver_lakehouse.zoholeads leads
-# MAGIC FULL OUTER JOIN silver_lakehouse.zohodeals deals
-# MAGIC ON leads.id = deals.id_lead
-# MAGIC FULL OUTER JOIN silver_lakehouse.zohocontacts contacts
-# MAGIC ON deals.id = contacts.id;
+# MAGIC             WHEN tablon.id_tipo_registro = 1 THEN tablon.telefono1  -- telefono1 de LEAD
+# MAGIC         END, 
+# MAGIC         contacts.phone  -- phone de CONTACT
+# MAGIC      ) AS telefono
+# MAGIC     ,COALESCE(
+# MAGIC         CASE 
+# MAGIC             WHEN tablon.id_tipo_registro = 1 THEN CONCAT(tablon.Nombre, ' ', tablon.Apellido1, ' ', tablon.Apellido2)  -- LEAD
+# MAGIC         END, 
+# MAGIC         CONCAT(contacts.First_Name, ' ', contacts.Last_Name, ' ', tablon.Apellido2)  -- CONTACT
+# MAGIC     ) AS nombre_Contacto
+# MAGIC     ,CASE 
+# MAGIC         WHEN tablon.id_tipo_registro = 1 THEN 0
+# MAGIC         WHEN tablon.id_tipo_registro IN (2,3) THEN COALESCE(ABS(tablon.pct_Descuento), 0)
+# MAGIC         ELSE NULL
+# MAGIC     END AS importe_Descuento
+# MAGIC     ,CASE 
+# MAGIC         WHEN tablon.id_tipo_registro = 1 THEN 0
+# MAGIC         WHEN tablon.id_tipo_registro IN (2,3) THEN COALESCE(ABS(tablon.importe), 0)
+# MAGIC         ELSE NULL
+# MAGIC     END AS Importe_Venta_Neto
+# MAGIC     ,CASE 
+# MAGIC         WHEN tablon.id_tipo_registro = 1 THEN 0
+# MAGIC         WHEN tablon.id_tipo_registro IN (2,3) THEN COALESCE(ABS(tablon.importe) + ABS(tablon.pct_Descuento), 0)
+# MAGIC         ELSE NULL
+# MAGIC     END AS Importe_Venta
+# MAGIC     ,CASE 
+# MAGIC         WHEN tablon.id_tipo_registro = 1 THEN 0
+# MAGIC         WHEN tablon.id_tipo_registro IN (2,3) THEN COALESCE(tablon.probabilidad_Conversion / 100, 0)
+# MAGIC         ELSE 0
+# MAGIC     END AS posibilidad_Venta
+# MAGIC     ,CASE 
+# MAGIC         WHEN tablon.id_tipo_registro IN (1,2) THEN tablon.fecha_Creacion_Lead
+# MAGIC         WHEN tablon.id_tipo_registro = 3 THEN tablon.fecha_Creacion_Oportunidad
+# MAGIC         ELSE NULL
+# MAGIC     END AS fec_Creacion
+# MAGIC     ,CASE 
+# MAGIC         WHEN tablon.id_tipo_registro = 1 THEN tablon.fecha_Modificacion_Lead
+# MAGIC         WHEN tablon.id_tipo_registro IN (2,3) THEN tablon.fecha_Modificacion_Oportunidad
+# MAGIC         ELSE NULL
+# MAGIC     END AS fec_Modificacion
+# MAGIC     ,CASE 
+# MAGIC         WHEN tablon.id_tipo_registro = 1 THEN NULL
+# MAGIC         WHEN tablon.id_tipo_registro IN (2,3) THEN tablon.fecha_Cierre
+# MAGIC         ELSE NULL
+# MAGIC     END AS fec_Cierre
+# MAGIC     ,   CASE 
+# MAGIC         WHEN tablon.id_tipo_registro = 1 THEN NULL
+# MAGIC         WHEN tablon.id_tipo_registro IN (2,3) THEN tablon.fecha_hora_Pagado
+# MAGIC         ELSE NULL
+# MAGIC     END AS fec_Pago_Matricula
+# MAGIC     ,CASE 
+# MAGIC         WHEN tablon.id_tipo_registro IN (1,2) THEN tablon.lead_Rating
+# MAGIC         WHEN tablon.id_tipo_registro = 3 THEN NULL
+# MAGIC     END AS nombre_Scoring
+# MAGIC     ,CASE 
+# MAGIC         WHEN tablon.id_tipo_registro IN (1,2) THEN tablon.leadScoring
+# MAGIC         WHEN tablon.id_tipo_registro = 3 THEN NULL
+# MAGIC     END AS puntos_Scoring
+# MAGIC     ,CASE 
+# MAGIC         WHEN tablon.id_tipo_registro IN (1,2) THEN DATEDIFF(tablon.fecha_Cierre, tablon.fecha_Creacion_Lead)
+# MAGIC         WHEN tablon.id_tipo_registro = 3 THEN DATEDIFF(tablon.fecha_Cierre, tablon.fecha_Creacion_Oportunidad)
+# MAGIC     END AS dias_Cierre
+# MAGIC FROM silver_lakehouse.tablon_leads_and_deals tablon
+# MAGIC LEFT JOIN silver_lakehouse.zohocontacts contacts
+# MAGIC     ON tablon.cod_Oportunidad = contacts.id;
 # MAGIC
 # MAGIC select * from zoho_table_view
 

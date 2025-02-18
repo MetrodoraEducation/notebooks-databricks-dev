@@ -42,6 +42,8 @@ for col in zohodeals_df.columns:
 
 # COMMAND ----------
 
+from pyspark.sql.functions import col
+
 # Diccionario para mapear las columnas con nombres más entendibles
 columns_mapping = {
     "data_amount": "importe",
@@ -60,6 +62,7 @@ columns_mapping = {
     "data_id_producto": "id_producto",
     "data_importe_pagado": "importe_pagado",
     "data_modified_time": "modified_time",
+    "data_created_time": "Created_Time",
     "data_motivo_p_rdida_b2b": "motivo_perdida_b2b",
     "data_motivo_p_rdida_b2c": "motivo_perdida_b2c",
     "data_pipeline": "pipeline",
@@ -83,17 +86,29 @@ columns_mapping = {
     "data_utm_perfil": "utm_perfil",
     "data_utm_source": "utm_fuente",
     "data_utm_term": "utm_termino",
-    "data_utm_type": "utm_tipo"
+    "data_utm_type": "utm_tipo",
+    "data_owner_email": "owner_email",
+    "data_owner_id": "owner_id",
+    "data_owner_name": "owner_name",
+    "data_lead_correlation_id": "lead_correlation_id",
+    "data_nacionalidad1": "nacionalidad1",
+    "data_id_unico": "id_unico",
+    "data_tipolog_a_del_alumno1": "Tipologia_alumno1",
+    "data_contact_name_id": "Contact_Name_id"
 }
 
-# Renombrar columnas dinámicamente
-for old_col, new_col in columns_mapping.items():
-    if old_col in zohodeals_df.columns:
-        zohodeals_df = zohodeals_df.withColumnRenamed(old_col, new_col)
+# Filtrar solo las columnas que existen en el DataFrame antes de renombrarlas
+existing_columns = [col for col in columns_mapping.keys() if col in zohodeals_df.columns]
+
+# Aplicar renombrado solo a las columnas que existen
+for old_col in existing_columns:
+    zohodeals_df = zohodeals_df.withColumnRenamed(old_col, columns_mapping[old_col])
+
+# Seleccionar solo las columnas renombradas
+zohodeals_df = zohodeals_df.select([col(new_col) for new_col in columns_mapping.values() if new_col in zohodeals_df.columns])
 
 # Mostrar el DataFrame resultante
 display(zohodeals_df)
-
 
 # COMMAND ----------
 
@@ -111,8 +126,6 @@ from pyspark.sql.functions import *
 
 # Ajuste del DataFrame con validación de columnas
 zohodeals_df = zohodeals_df \
-    .withColumn("processdate", current_timestamp()) \
-    .withColumn("sourcesystem", lit("zoho_Deals")) \
     .withColumn("importe", col("importe").cast(DoubleType())) \
     .withColumn("codigo_descuento", col("codigo_descuento").cast(StringType())) \
     .withColumn("fecha_cierre", to_date(col("fecha_cierre"), "yyyy-MM-dd")) \
@@ -129,6 +142,7 @@ zohodeals_df = zohodeals_df \
     .withColumn("id_producto", col("id_producto").cast(StringType())) \
     .withColumn("importe_pagado", col("importe_pagado").cast(DoubleType())) \
     .withColumn("modified_time", to_timestamp(col("modified_time"), "yyyy-MM-dd'T'HH:mm:ssXXX")) \
+    .withColumn("Created_Time", to_timestamp(col("Created_Time"), "yyyy-MM-dd'T'HH:mm:ssXXX")) \
     .withColumn("motivo_perdida_b2b", col("motivo_perdida_b2b").cast(StringType())) \
     .withColumn("motivo_perdida_b2c", col("motivo_perdida_b2c").cast(StringType())) \
     .withColumn("pipeline", col("pipeline").cast(StringType())) \
@@ -152,11 +166,20 @@ zohodeals_df = zohodeals_df \
     .withColumn("utm_profile", col("utm_perfil").cast(StringType())) \
     .withColumn("utm_source", col("utm_fuente").cast(StringType())) \
     .withColumn("utm_term", col("utm_termino").cast(StringType())) \
-    .withColumn("utm_type", col("utm_tipo").cast(StringType()))
+    .withColumn("utm_type", col("utm_tipo").cast(StringType())) \
+    .withColumn("owner_email", col("owner_email").cast(StringType())) \
+    .withColumn("owner_id", col("owner_id").cast(StringType())) \
+    .withColumn("owner_name", col("owner_name").cast(StringType())) \
+    .withColumn("lead_correlation_id", col("lead_correlation_id").cast(StringType())) \
+    .withColumn("nacionalidad1", col("nacionalidad1").cast(StringType())) \
+    .withColumn("id_unico", col("id_unico")) \
+    .withColumn("Contact_Name_id", col("Contact_Name_id").cast(StringType())) \
+    .withColumn("Tipologia_alumno1", col("Tipologia_alumno1").cast(StringType())) \
+    .withColumn("processdate", current_timestamp()) \
+    .withColumn("sourcesystem", lit("zoho_Deals")) 
 
 # Mostrar el DataFrame final
 display(zohodeals_df)
-
 
 # COMMAND ----------
 
@@ -181,7 +204,6 @@ for t in zohodeals_df.dtypes:
 # Muestra el DataFrame resultante
 display(zohodeals_df)
 
-
 # COMMAND ----------
 
 zohodeals_df = zohodeals_df.dropDuplicates()
@@ -196,6 +218,6 @@ zohodeals_df.createOrReplaceTempView("zohodeals_source_view")
 # MAGIC MERGE INTO silver_lakehouse.zohodeals
 # MAGIC USING zohodeals_source_view
 # MAGIC ON silver_lakehouse.zohodeals.id = zohodeals_source_view.id
-# MAGIC    AND silver_lakehouse.zohodeals.id_producto = zohodeals_source_view.id_producto
+# MAGIC AND silver_lakehouse.zohodeals.id_producto = zohodeals_source_view.id_producto
 # MAGIC WHEN MATCHED THEN UPDATE SET *
 # MAGIC WHEN NOT MATCHED THEN INSERT *

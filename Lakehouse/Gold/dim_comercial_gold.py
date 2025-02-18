@@ -5,11 +5,6 @@
 # COMMAND ----------
 
 # MAGIC %md
-# MAGIC **Gestion Zoho**
-
-# COMMAND ----------
-
-# MAGIC %md
 # MAGIC  Explicación Detallada del Código
 # MAGIC ✅ Vista Temporal (dim_comercial_temp_view):
 # MAGIC
@@ -23,6 +18,70 @@
 # MAGIC
 # MAGIC Un comercial es activo (1) si no tiene fechaHasta o si fechaDesde ≤ current_date < fechaHasta.
 # MAGIC Es inactivo (0) si su fechaHasta ya ha pasado.
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **Gestion Calls**
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC CREATE OR REPLACE TEMPORARY VIEW comercial_sales_view
+# MAGIC     AS SELECT DISTINCT 
+# MAGIC     propietario_lead AS nombre_comercial,
+# MAGIC     institucion AS equipo_comercial,
+# MAGIC     '' AS cod_comercial,  -- Si no tienes esta columna en la fuente, se asigna un valor vacío
+# MAGIC     TRUE AS activo,       -- Si no tienes la columna, puedes definirla como TRUE o algún valor por defecto
+# MAGIC     CURRENT_DATE() AS fecha_desde  -- Si no tienes la columna, usa la fecha actual como predeterminado
+# MAGIC FROM silver_lakehouse.sales
+# MAGIC WHERE propietario_lead <> 'n/a';
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC MERGE INTO gold_lakehouse.dim_comercial AS target
+# MAGIC USING comercial_sales_view AS source
+# MAGIC ON UPPER(target.nombre_comercial) = UPPER(source.nombre_comercial)
+# MAGIC WHEN MATCHED THEN 
+# MAGIC     UPDATE SET 
+# MAGIC         target.equipo_comercial = source.equipo_comercial,
+# MAGIC         target.cod_comercial = source.cod_comercial,
+# MAGIC         target.fecha_hasta = CASE 
+# MAGIC                                 WHEN target.equipo_comercial <> source.equipo_comercial 
+# MAGIC                                   OR target.cod_comercial <> source.cod_comercial 
+# MAGIC                                 THEN CURRENT_DATE() 
+# MAGIC                                 ELSE target.fecha_hasta 
+# MAGIC                              END
+# MAGIC WHEN NOT MATCHED THEN 
+# MAGIC     INSERT (nombre_comercial, equipo_comercial, cod_comercial, activo, fecha_desde, fecha_hasta)
+# MAGIC     VALUES (source.nombre_comercial, source.equipo_comercial, source.cod_comercial, source.activo, source.fecha_desde, NULL);
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC CREATE OR REPLACE TEMPORARY VIEW comercial_calls_view
+# MAGIC     AS SELECT distinct user_name from silver_lakehouse.aircallcalls where user_name<>'n/a'
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC MERGE INTO gold_lakehouse.dim_comercial
+# MAGIC USING comercial_calls_view 
+# MAGIC ON gold_lakehouse.dim_comercial.nombre_comercial = comercial_calls_view.user_name
+# MAGIC --WHEN MATCHED THEN UPDATE SET gold_lakehouse.dim_comercial.equipo_comercial = comercial_sales_view.equipo_comercial
+# MAGIC WHEN NOT MATCHED THEN INSERT (gold_lakehouse.dim_comercial.nombre_comercial, gold_lakehouse.dim_comercial.equipo_comercial, gold_lakehouse.dim_comercial.activo, gold_lakehouse.dim_comercial.fecha_desde)
+# MAGIC VALUES (comercial_calls_view.user_name, 'n/a', -1, current_date())
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from gold_lakehouse.dim_comercial
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **Gestion Zoho**
 
 # COMMAND ----------
 
@@ -68,49 +127,3 @@
 # MAGIC FROM dim_comercial_temp_view
 # MAGIC GROUP BY nombre_comercial
 # MAGIC HAVING COUNT(*) > 1;
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC MERGE INTO gold_lakehouse.dim_comercial AS target
-# MAGIC USING comercial_sales_view AS source
-# MAGIC ON UPPER(target.nombre_comercial) = UPPER(source.nombre_comercial)
-# MAGIC WHEN MATCHED THEN 
-# MAGIC     UPDATE SET 
-# MAGIC         target.equipo_comercial = source.equipo_comercial,
-# MAGIC         target.cod_comercial = source.cod_comercial,
-# MAGIC         target.fecha_hasta = CASE 
-# MAGIC                                 WHEN target.equipo_comercial <> source.equipo_comercial 
-# MAGIC                                   OR target.cod_comercial <> source.cod_comercial 
-# MAGIC                                 THEN CURRENT_DATE() 
-# MAGIC                                 ELSE target.fecha_hasta 
-# MAGIC                              END
-# MAGIC WHEN NOT MATCHED THEN 
-# MAGIC     INSERT (nombre_comercial, equipo_comercial, cod_comercial, activo, fecha_desde, fecha_hasta)
-# MAGIC     VALUES (source.nombre_comercial, source.equipo_comercial, source.cod_comercial, source.activo, source.fecha_desde, NULL);
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC **Gestion Calls**
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC CREATE OR REPLACE TEMPORARY VIEW comercial_calls_view
-# MAGIC     AS SELECT distinct user_name from silver_lakehouse.aircallcalls where user_name<>'n/a'
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC MERGE INTO gold_lakehouse.dim_comercial
-# MAGIC USING comercial_calls_view 
-# MAGIC ON gold_lakehouse.dim_comercial.nombre_comercial = comercial_calls_view.user_name
-# MAGIC --WHEN MATCHED THEN UPDATE SET gold_lakehouse.dim_comercial.equipo_comercial = comercial_sales_view.equipo_comercial
-# MAGIC WHEN NOT MATCHED THEN INSERT (gold_lakehouse.dim_comercial.nombre_comercial, gold_lakehouse.dim_comercial.equipo_comercial, gold_lakehouse.dim_comercial.activo, gold_lakehouse.dim_comercial.fecha_desde)
-# MAGIC VALUES (comercial_calls_view.user_name, 'n/a', 1, current_date())
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select * from gold_lakehouse.dim_comercial

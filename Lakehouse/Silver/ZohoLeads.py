@@ -55,6 +55,7 @@ columns_mapping = {
     "data_lead_status": "lead_status",
     "data_mobile": "mobile",
     "data_modified_time": "modified_time",
+    "data_created_time": "Created_Time",
     "data_motivos_de_perdida": "motivos_perdida",
     "data_nacionalidad": "nacionalidad",
     "data_phone": "phone",
@@ -84,7 +85,10 @@ columns_mapping = {
     "data_utm_perfil": "utm_profile",
     "data_utm_source": "utm_source",
     "data_utm_term": "utm_term",
-    "data_utm_type": "utm_type"
+    "data_utm_type": "utm_type",
+    "data_owner_email": "owner_email",
+    "data_owner_id": "owner_id",
+    "data_owner_name": "owner_name"
 }
 
 
@@ -95,7 +99,6 @@ for old_col, new_col in columns_mapping.items():
 
 # Mostrar el DataFrame resultante
 display(zoholeads_df)
-
 
 # COMMAND ----------
 
@@ -119,9 +122,11 @@ zoholeads_df = zoholeads_df \
     .withColumn("id", col("id").cast(StringType())) \
     .withColumn("first_name", col("first_name").cast(StringType())) \
     .withColumn("last_name", col("last_name").cast(StringType())) \
+    .withColumn("apellido_2", col("apellido_2").cast(StringType())) \
     .withColumn("email", col("email").cast(StringType())) \
     .withColumn("mobile", col("mobile").cast(StringType())) \
     .withColumn("modified_time", to_timestamp(col("modified_time"), "yyyy-MM-dd'T'HH:mm:ssXXX")) \
+    .withColumn("Created_Time", to_timestamp(col("Created_Time"), "yyyy-MM-dd'T'HH:mm:ssXXX")) \
     .withColumn("lead_source", col("lead_source").cast(StringType())) \
     .withColumn("lead_status", col("lead_status").cast(StringType())) \
     .withColumn("lead_rating", col("lead_rating").cast(StringType())) \
@@ -149,11 +154,14 @@ zoholeads_df = zoholeads_df \
     .withColumn("facebook_click_id", col("facebook_click_id").cast(StringType())) \
     .withColumn("id_producto", col("id_producto").cast(StringType())) \
     .withColumn("id_programa", col("id_programa").cast(StringType())) \
-    .withColumn("id_correlacion_prospecto", col("lead_correlation_id").cast(StringType())) \
+    .withColumn("lead_correlation_id", col("lead_correlation_id").cast(StringType())) \
     .withColumn("description", col("description").cast(StringType())) \
     .withColumn("phone", col("phone").cast(StringType())) \
     .withColumn("device", col("device").cast(StringType())) \
-    .withColumn("source", col("source").cast(StringType()))
+    .withColumn("source", col("source").cast(StringType())) \
+    .withColumn("owner_email", col("owner_email").cast(StringType())) \
+    .withColumn("owner_id", col("owner_id").cast(StringType())) \
+    .withColumn("owner_name", col("owner_name").cast(StringType())) 
 
 # Display final DataFrame
 display(zoholeads_df)
