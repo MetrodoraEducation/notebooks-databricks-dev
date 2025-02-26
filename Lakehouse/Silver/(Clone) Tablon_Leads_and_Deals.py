@@ -1,5 +1,4 @@
 # Databricks notebook source
-# DBTITLE 1,Create View
 # MAGIC %sql
 # MAGIC CREATE OR REPLACE TEMPORARY VIEW tablon_leads_and_deals AS
 # MAGIC                 SELECT  
@@ -76,7 +75,6 @@
 # MAGIC                         deals.fecha_hora_Pagado as fecha_hora_Pagado,
 # MAGIC                         deals.Created_Time AS fecha_Creacion_Oportunidad, --deals.Created_Time
 # MAGIC                         deals.Modified_Time AS fecha_Modificacion_Oportunidad,
-# MAGIC                         deals.fecha_hora_anulacion as fecha_hora_Anulacion,
 # MAGIC                         CASE 
 # MAGIC                             WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN leads.processdate
 # MAGIC                             WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN COALESCE(deals.processdate, leads.processdate)
@@ -112,54 +110,66 @@
 
 # COMMAND ----------
 
-# DBTITLE 1,Estado 1 → Estado 2
 # MAGIC %sql
+# MAGIC WITH deduplicated_source AS (
+# MAGIC     SELECT
+# MAGIC         *,
+# MAGIC         ROW_NUMBER() OVER (
+# MAGIC             PARTITION BY COALESCE(cod_Lead, ''), COALESCE(cod_Oportunidad, '')
+# MAGIC             ORDER BY processdate DESC
+# MAGIC         ) AS row_num
+# MAGIC     FROM staging_tablon
+# MAGIC )
 # MAGIC MERGE INTO silver_lakehouse.tablon_leads_and_deals AS target
-# MAGIC USING staging_tablon AS source
+# MAGIC USING (
+# MAGIC     SELECT * FROM deduplicated_source WHERE row_num = 1
+# MAGIC ) AS source
 # MAGIC ON 
 # MAGIC     COALESCE(target.cod_Lead, '') = COALESCE(source.cod_Lead, '') 
-# MAGIC     AND target.cod_Oportunidad IS NULL 
-# MAGIC     AND source.cod_Oportunidad IS NOT NULL
+# MAGIC     AND (
+# MAGIC         COALESCE(target.cod_Oportunidad, '') = COALESCE(source.cod_Oportunidad, '') 
+# MAGIC         OR (target.cod_Oportunidad IS NOT NULL AND target.cod_Lead IS NULL)
+# MAGIC     )
 # MAGIC
-# MAGIC WHEN MATCHED AND target.fecha_Modificacion_Oportunidad < source.fecha_Modificacion_Oportunidad THEN 
+# MAGIC -- 🔹 **Caso 1: Si un `lead` ahora tiene una `oportunidad`, cambiar de Estado 1 → Estado 2.**
+# MAGIC WHEN MATCHED AND target.cod_Oportunidad IS NULL 
+# MAGIC AND source.cod_Oportunidad IS NOT NULL 
+# MAGIC AND target.fecha_Modificacion_Oportunidad < source.fecha_Modificacion_Oportunidad THEN 
 # MAGIC     UPDATE SET 
 # MAGIC         target.cod_Oportunidad = source.cod_Oportunidad,
-# MAGIC         target.id_tipo_registro = 2,
+# MAGIC         target.id_tipo_registro = 2,  
 # MAGIC         target.tipo_registro = 'Con lead y con oportunidad',
 # MAGIC         target.fecha_Modificacion_Oportunidad = source.fecha_Modificacion_Oportunidad,
 # MAGIC         target.processdate = source.processdate,
-# MAGIC         target.sourcesystem = source.sourcesystem;
-
-# COMMAND ----------
-
-# DBTITLE 1,Estado 3 → Estado 2
-# MAGIC %sql
-# MAGIC MERGE INTO silver_lakehouse.tablon_leads_and_deals AS target
-# MAGIC USING staging_tablon AS source
-# MAGIC ON 
-# MAGIC     COALESCE(target.cod_Oportunidad, '') = COALESCE(source.cod_Oportunidad, '') 
-# MAGIC     AND target.cod_Lead IS NULL 
-# MAGIC     AND source.cod_Lead IS NOT NULL
+# MAGIC         target.sourcesystem = source.sourcesystem
 # MAGIC
-# MAGIC WHEN MATCHED AND target.fecha_Modificacion_Lead < source.fecha_Modificacion_Lead THEN 
+# MAGIC -- 🔹 **Caso 2: Si una `oportunidad` ahora tiene un `lead`, cambiar de Estado 3 → Estado 2.**
+# MAGIC WHEN MATCHED AND target.cod_Lead IS NULL 
+# MAGIC AND source.cod_Lead IS NOT NULL 
+# MAGIC AND target.fecha_Modificacion_Lead < source.fecha_Modificacion_Lead THEN 
 # MAGIC     UPDATE SET 
 # MAGIC         target.cod_Lead = source.cod_Lead,
-# MAGIC         target.id_tipo_registro = 2,
+# MAGIC         target.id_tipo_registro = 2,  
 # MAGIC         target.tipo_registro = 'Con lead y con oportunidad',
 # MAGIC         target.fecha_Modificacion_Lead = source.fecha_Modificacion_Lead,
 # MAGIC         target.processdate = source.processdate,
-# MAGIC         target.sourcesystem = source.sourcesystem;
-
-# COMMAND ----------
-
-# DBTITLE 1,Insertar Nuevos Registros si No Existen
-# MAGIC %sql
-# MAGIC MERGE INTO silver_lakehouse.tablon_leads_and_deals AS target
-# MAGIC USING staging_tablon AS source
-# MAGIC ON 
-# MAGIC     COALESCE(target.cod_Lead, '') = COALESCE(source.cod_Lead, '') 
-# MAGIC     AND COALESCE(target.cod_Oportunidad, '') = COALESCE(source.cod_Oportunidad, '')
+# MAGIC         target.sourcesystem = source.sourcesystem
 # MAGIC
+# MAGIC -- 🔹 **Caso 3: Si `fecha_Modificacion_Oportunidad` cambió, actualizar la oportunidad.**
+# MAGIC WHEN MATCHED AND target.fecha_Modificacion_Oportunidad < source.fecha_Modificacion_Oportunidad THEN 
+# MAGIC     UPDATE SET 
+# MAGIC         target.fecha_Modificacion_Oportunidad = source.fecha_Modificacion_Oportunidad,
+# MAGIC         target.processdate = source.processdate,
+# MAGIC         target.sourcesystem = source.sourcesystem
+# MAGIC
+# MAGIC -- 🔹 **Caso 4: Si `fecha_Modificacion_Lead` cambió, actualizar el lead.**
+# MAGIC WHEN MATCHED AND target.fecha_Modificacion_Lead < source.fecha_Modificacion_Lead THEN 
+# MAGIC     UPDATE SET 
+# MAGIC         target.fecha_Modificacion_Lead = source.fecha_Modificacion_Lead,
+# MAGIC         target.processdate = source.processdate,
+# MAGIC         target.sourcesystem = source.sourcesystem
+# MAGIC
+# MAGIC -- 🔹 **Caso 5: Si el registro no existe en `target`, lo insertamos sin afectar estados existentes.**
 # MAGIC WHEN NOT MATCHED THEN 
 # MAGIC     INSERT (
 # MAGIC         id_tipo_registro, tipo_registro, cod_Lead, cod_Oportunidad, lead_Nombre, Nombre, Apellido1, Apellido2,
@@ -172,10 +182,10 @@
 # MAGIC         fecha_Cierre, cod_Unico_Zoho, ratio_Moneda, moneda, importe_Pagado, 
 # MAGIC         cod_Descuento, pct_Descuento, importe, tipo_Alumno, 
 # MAGIC         tipo_Conversion_opotunidad, tipo_Cliente_oportunidad, fecha_hora_Pagado, fecha_Creacion_Oportunidad, 
-# MAGIC         fecha_Modificacion_Oportunidad, fecha_hora_anulacion, processdate, sourcesystem
+# MAGIC         fecha_Modificacion_Oportunidad, processdate, sourcesystem
 # MAGIC     ) 
 # MAGIC     VALUES (
-# MAGIC         source.id_tipo_registro, source.tipo_registro,source.cod_Lead, source.cod_Oportunidad, source.lead_Nombre, source.Nombre, 
+# MAGIC         source.id_tipo_registro, source.tipo_registro, source.cod_Lead, source.cod_Oportunidad, source.lead_Nombre, source.Nombre, 
 # MAGIC         source.Apellido1, source.Apellido2, source.email, source.telefono1, source.nacionalidad, source.telefono2, 
 # MAGIC         source.provincia, source.residencia, source.sexo, source.lead_Rating, source.leadScoring, source.etapa, 
 # MAGIC         source.motivo_Perdida, source.probabilidad_Conversion, source.flujo_Venta, source.profesion_Estudiante, 
@@ -186,30 +196,9 @@
 # MAGIC         source.fecha_Cierre, source.cod_Unico_Zoho, source.ratio_Moneda, source.moneda, source.importe_Pagado, 
 # MAGIC         source.cod_Descuento, source.pct_Descuento, source.importe, source.tipo_Alumno, source.tipo_Conversion_opotunidad, 
 # MAGIC         source.tipo_Cliente_oportunidad, source.fecha_hora_Pagado, source.fecha_Creacion_Oportunidad, source.fecha_Modificacion_Oportunidad, 
-# MAGIC         source.fecha_hora_anulacion, source.processdate, source.sourcesystem
+# MAGIC         source.processdate, source.sourcesystem
 # MAGIC     );
-
-# COMMAND ----------
-
-# DBTITLE 1,Eliminar Registros Duplicados de Estados Anteriores
-# MAGIC %sql
-# MAGIC DELETE FROM silver_lakehouse.tablon_leads_and_deals
-# MAGIC WHERE id_tipo_registro IN (1,3)
-# MAGIC AND (
-# MAGIC     -- Si existe un estado 2 con la misma `cod_Lead`
-# MAGIC     EXISTS (
-# MAGIC         SELECT 1 FROM silver_lakehouse.tablon_leads_and_deals existing
-# MAGIC         WHERE existing.cod_Lead = tablon_leads_and_deals.cod_Lead
-# MAGIC         AND existing.id_tipo_registro = 2
-# MAGIC     )
-# MAGIC     OR 
-# MAGIC     -- Si existe un estado 2 con la misma `cod_Oportunidad`
-# MAGIC     EXISTS (
-# MAGIC         SELECT 1 FROM silver_lakehouse.tablon_leads_and_deals existing
-# MAGIC         WHERE existing.cod_Oportunidad = tablon_leads_and_deals.cod_Oportunidad
-# MAGIC         AND existing.id_tipo_registro = 2
-# MAGIC     )
-# MAGIC );
+# MAGIC
 
 # COMMAND ----------
 

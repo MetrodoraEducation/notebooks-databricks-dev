@@ -11,11 +11,22 @@
 # MAGIC FROM silver_lakehouse.sales
 # MAGIC WHERE institucion IS NOT NULL AND institucion <> '';
 # MAGIC
-# MAGIC select * from dim_entidad_legal_view
+# MAGIC select * from dim_entidad_legal_view;
 
 # COMMAND ----------
 
 # MAGIC %sql
+# MAGIC -- 1️⃣ 🔹 Asegurar que el registro `idDimEntidadLegal = -1` existe con valores `n/a`
+# MAGIC MERGE INTO gold_lakehouse.dim_entidad_legal AS target
+# MAGIC USING (
+# MAGIC     SELECT 'n/a' AS nombreInstitucion, 'n/a' AS codigoEntidadLegal
+# MAGIC ) AS source
+# MAGIC ON target.nombreInstitucion = 'n/a'
+# MAGIC WHEN NOT MATCHED THEN 
+# MAGIC     INSERT (nombreInstitucion, codigoEntidadLegal, ETLcreatedDate, ETLupdatedDate)
+# MAGIC     VALUES ('n/a', 'n/a', current_timestamp(), current_timestamp());
+# MAGIC
+# MAGIC -- 2️⃣ 🔹 MERGE para insertar o actualizar entidades legales, excluyendo `n/a`
 # MAGIC MERGE INTO gold_lakehouse.dim_entidad_legal AS target
 # MAGIC USING (
 # MAGIC     SELECT DISTINCT 
@@ -29,17 +40,20 @@
 # MAGIC         current_timestamp() AS ETLcreatedDate,
 # MAGIC         current_timestamp() AS ETLupdatedDate
 # MAGIC     FROM silver_lakehouse.sales
-# MAGIC     WHERE institucion IS NOT NULL AND institucion <> ''
+# MAGIC     WHERE institucion IS NOT NULL 
+# MAGIC       AND institucion <> '' 
+# MAGIC       AND institucion <> 'n/a' -- Evitar modificar el registro especial
 # MAGIC ) AS source
 # MAGIC ON target.nombreInstitucion = source.nombreInstitucion
+# MAGIC
 # MAGIC WHEN MATCHED THEN 
 # MAGIC     UPDATE SET 
 # MAGIC         target.codigoEntidadLegal = source.codigoEntidadLegal,
 # MAGIC         target.ETLupdatedDate = current_timestamp()
+# MAGIC
 # MAGIC WHEN NOT MATCHED THEN 
 # MAGIC     INSERT (nombreInstitucion, codigoEntidadLegal, ETLcreatedDate, ETLupdatedDate)
 # MAGIC     VALUES (source.nombreInstitucion, source.codigoEntidadLegal, source.ETLcreatedDate, source.ETLupdatedDate);
-# MAGIC
 
 # COMMAND ----------
 
@@ -91,7 +105,7 @@
 # MAGIC WHERE entidadLegal IS NOT NULL AND entidadLegal <> ''
 # MAGIC AND entidadLegal NOT IN (SELECT nombreInstitucion FROM gold_lakehouse.dim_entidad_legal);
 # MAGIC
-# MAGIC select * from entidad_legal_view
+# MAGIC select * from entidad_legal_view;
 
 # COMMAND ----------
 

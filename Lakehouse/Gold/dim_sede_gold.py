@@ -54,19 +54,31 @@
 
 # DBTITLE 1,Merge Into from sales
 # MAGIC %sql
-# MAGIC MERGE INTO gold_lakehouse.dim_sede
-# MAGIC USING sede_sales_view 
-# MAGIC ON gold_lakehouse.dim_sede.nombre_sede = sede_sales_view.nombre_sede
+# MAGIC -- 1️⃣ 🔹 Asegurar que el registro `-1` existe con valores `n/a`
+# MAGIC MERGE INTO gold_lakehouse.dim_sede AS target
+# MAGIC USING (
+# MAGIC     SELECT 'n/a' AS nombre_sede, 'n/a' AS codigo_sede
+# MAGIC ) AS source
+# MAGIC ON target.id_dim_sede = -1
+# MAGIC WHEN NOT MATCHED THEN 
+# MAGIC     INSERT (nombre_sede, codigo_sede)
+# MAGIC     VALUES ('n/a', 'n/a');
 # MAGIC
-# MAGIC WHEN MATCHED THEN UPDATE SET gold_lakehouse.dim_sede.codigo_sede = sede_sales_view.codigo_sede
+# MAGIC -- 2️⃣ 🔹 Realizar el MERGE para actualizar o insertar nuevos registros de `sede_sales_view`
+# MAGIC MERGE INTO gold_lakehouse.dim_sede AS target
+# MAGIC USING (
+# MAGIC     SELECT DISTINCT nombre_sede, codigo_sede FROM sede_sales_view
+# MAGIC ) AS source
+# MAGIC ON target.nombre_sede = source.nombre_sede
 # MAGIC
-# MAGIC WHEN NOT MATCHED THEN INSERT (gold_lakehouse.dim_sede.nombre_sede,gold_lakehouse.dim_sede.codigo_sede)
-# MAGIC VALUES (sede_sales_view.nombre_sede,sede_sales_view.codigo_sede)
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC SELECT * FROM gold_lakehouse.dim_sede;
+# MAGIC -- 🔹 Si el registro ya existe, actualiza su código
+# MAGIC WHEN MATCHED THEN 
+# MAGIC     UPDATE SET target.codigo_sede = source.codigo_sede
+# MAGIC
+# MAGIC -- 🔹 Si el registro no existe, se inserta sin tocar el ID
+# MAGIC WHEN NOT MATCHED THEN
+# MAGIC     INSERT (nombre_sede, codigo_sede, ETLcreatedDate, ETLupdatedDate)
+# MAGIC     VALUES (source.nombre_sede, source.codigo_sede, current_timestamp(), current_timestamp());
 
 # COMMAND ----------
 
@@ -118,11 +130,6 @@
 
 # COMMAND ----------
 
-# MAGIC %sql
-# MAGIC select * from dim_sede_view
-
-# COMMAND ----------
-
 # DBTITLE 1,Merge into from dim_producto
 # MAGIC %sql
 # MAGIC MERGE INTO gold_lakehouse.dim_sede AS target
@@ -138,5 +145,12 @@
 # MAGIC   target.nombre_sede = source.nombre_sede
 # MAGIC
 # MAGIC WHEN NOT MATCHED THEN
-# MAGIC INSERT (codigo_sede, nombre_sede)
-# MAGIC VALUES (source.codigo_sede, source.nombre_sede);
+# MAGIC INSERT (codigo_sede, nombre_sede, ETLcreatedDate, ETLupdatedDate)
+# MAGIC VALUES (source.codigo_sede, source.nombre_sede, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP());
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC -- 3️⃣ 🔹 Asegurar que solo haya un único ID `-1`
+# MAGIC DELETE FROM gold_lakehouse.dim_sede
+# MAGIC WHERE nombre_sede = 'n/a' AND id_dim_sede <> -1;

@@ -121,14 +121,38 @@ spark.sql(sql_query)
 
 sql_query = f"""
 CREATE OR REPLACE TABLE gold_lakehouse.dim_pais (
-id int,
-nombre string,
-name string,
-iso2 string,	
-iso3 string
+    id int,
+    nombre string,
+    name string,
+    nombre_nacionalidad string,
+    iso2 string,	
+    iso3 string
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_pais';
+"""
+
+spark.sql(sql_query)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **Tabla dim_nacionalidad**
+
+# COMMAND ----------
+
+
+sql_query = f"""
+CREATE OR REPLACE TABLE gold_lakehouse.dim_nacionalidad (
+    id int,
+    nombre string,
+    name string,
+    nombre_nacionalidad string,
+    iso2 string,	
+    iso3 string
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_nacionalidad';
 """
 
 spark.sql(sql_query)
@@ -144,7 +168,7 @@ spark.sql(sql_query)
 
 sql_query = f"""
 CREATE OR REPLACE TABLE gold_lakehouse.dim_motivo_perdida_llamada (
-    id_dim_motivo_perdida_llamada BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 0 INCREMENT BY 1),    
+    id_dim_motivo_perdida_llamada BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),    
     motivo_perdida_llamada STRING,
     tipo_perdida STRING
 )
@@ -165,7 +189,8 @@ spark.sql(sql_query)
 
 sql_query = f"""
 CREATE OR REPLACE TABLE gold_lakehouse.dim_comercial (
-    id_dim_comercial BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    id_dim_comercial BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    cod_comercial STRING, 
     nombre_comercial STRING,
     equipo_comercial STRING,    
     activo INTEGER,
@@ -177,16 +202,6 @@ LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim
 """
 
 spark.sql(sql_query)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC **Inserimento registro con valor vacio para la dim_comercial**
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC INSERT INTO gold_lakehouse.dim_comercial (nombre_comercial, equipo_comercial , activo ) VALUES ('n/a', 'n/a' , 1)
 
 # COMMAND ----------
 
@@ -219,15 +234,17 @@ spark.sql(sql_query)
 # COMMAND ----------
 
 # DBTITLE 1,dim_origen_campania
-
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_origen_campania
 (
-id_dim_origen_campania BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-nombre_origen_campania string, 
-tipo_campania string, 
-canal_campania string, 
-medio_campania string 
+    id_dim_origen_campania BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    nombre_origen_campania string, 
+    tipo_campania string, 
+    canal_campania string, 
+    medio_campania string,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP,
+    fec_procesamiento TIMESTAMP
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_origen_campania';
@@ -247,7 +264,7 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_campania
 (
-id_dim_campania BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+id_dim_campania BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
 nombre_campania string
 )
 USING DELTA
@@ -268,8 +285,10 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_estado_venta
 (
-id_dim_estado_venta BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-nombre_estado_venta string
+    id_dim_estado_venta BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    nombre_estado_venta STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_estado_venta';
@@ -289,8 +308,12 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_etapa_venta
 (
-id_dim_etapa_venta BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-nombre_etapa_venta string
+    id_dim_etapa_venta BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    nombre_etapa_venta STRING,
+    nombreEtapaVentaAgrupado STRING,
+    esNe BIGINT,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_etapa_venta';
@@ -331,9 +354,11 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_modalidad
 (
-id_dim_modalidad BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-nombre_modalidad string,
-codigo string
+        id_dim_modalidad BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+        nombre_modalidad STRING,
+        codigo STRING,
+        ETLcreatedDate TIMESTAMP,
+        ETLupdatedDate TIMESTAMP
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_modalidad';
@@ -353,8 +378,10 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_institucion
 (
-id_dim_institucion BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-nombre_institucion string
+    id_dim_institucion BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    nombre_institucion STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_institucion';
@@ -395,9 +422,11 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_sede
 (
-id_dim_sede BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-nombre_sede string,
-codigo_sede string
+    id_dim_sede BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    nombre_sede STRING,
+    codigo_sede STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_sede';
@@ -438,19 +467,19 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_estudio
 (
-id_dim_estudio BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-cod_estudio string,
-nombre_de_programa string,
-cod_vertical string,
-vertical_desc string,
-cod_entidad_legal string,
-entidad_legal_desc string,
-cod_especialidad string,
-especialidad_desc string,
-cod_tipo_formacion string,
-tipo_formacion_desc string,
-cod_tipo_negocio string,
-tipo_negocio_desc string
+    id_dim_estudio BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    cod_estudio string,
+    nombre_de_programa string,
+    cod_vertical string,
+    vertical_desc string,
+    cod_entidad_legal string,
+    entidad_legal_desc string,
+    cod_especialidad string,
+    especialidad_desc string,
+    cod_tipo_formacion string,
+    tipo_formacion_desc string,
+    cod_tipo_negocio string,
+    tipo_negocio_desc string
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_estudio';
@@ -470,8 +499,10 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_localidad
 (
-id_dim_localidad BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-nombre_localidad string
+    id_dim_localidad BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    nombre_localidad STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_localidad';
@@ -491,8 +522,10 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_motivo_cierre
 (
-id_dim_motivo_cierre BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-motivo_cierre string
+    id_dim_motivo_cierre BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    motivo_cierre STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_motivo_cierre';
@@ -512,9 +545,11 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_tipo_formacion
 (
-id_dim_tipo_formacion BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-tipo_formacion_desc string,
-cod_tipo_formacion string
+    id_dim_tipo_formacion BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    tipo_formacion_desc STRING,
+    cod_tipo_formacion STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_tipo_formacion';
@@ -534,9 +569,11 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_tipo_negocio
 (
-id_dim_tipo_negocio BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-tipo_negocio_desc string,
-cod_tipo_negocio	string
+    id_dim_tipo_negocio BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    tipo_negocio_desc STRING,
+    cod_tipo_negocio STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_tipo_negocio';
@@ -556,46 +593,48 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.fct_venta
 (
-id_venta BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-cod_venta string,
-nombre string,
-email string,
-telefono string,
-nombre_contacto string,
-id_dim_propietario_lead BIGINT,
-id_dim_origen_campania BIGINT,
-id_dim_campania BIGINT,
-importe_venta double,
-importe_descuento double,
-importe_venta_neta double,
-id_dim_estado_venta BIGINT,
-id_dim_etapa_venta BIGINT,
-posibilidad_venta double,
-fec_creacion date,
-fec_modificacion date,
-fec_cierre date,
-id_dim_modalidad BIGINT,
-id_dim_institucion BIGINT,
-id_dim_sede BIGINT,
-id_dim_pais INT,
-id_dim_estudio BIGINT,
-fec_pago_matricula date,
-importe_matricula double, 
-importe_descuento_matricula double,
-importe_neto_matricula double,
-id_dim_localidad BIGINT,
-id_dim_tipo_formacion BIGINT,
-id_dim_tipo_negocio BIGINT,
-nombre_scoring string,
-puntos_scoring double,
-dias_cierre int,
-id_dim_motivo_cierre BIGINT,
-fec_procesamiento timestamp,
-sistema_origen string,
-tiempo_de_maduracion int,
-new_enrollent INT,
-lead_neto INT,
-activo INT
+    id_venta BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    cod_venta string,
+    nombre string,
+    email string,
+    telefono string,
+    nombre_contacto string,
+    id_dim_propietario_lead BIGINT,
+    id_dim_origen_campania BIGINT,
+    id_dim_campania BIGINT,
+    importe_venta double,
+    importe_descuento double,
+    importe_venta_neta double,
+    id_dim_estado_venta BIGINT,
+    id_dim_etapa_venta BIGINT,
+    posibilidad_venta double,
+    fec_creacion date,
+    fec_modificacion date,
+    fec_cierre date,
+    id_dim_modalidad BIGINT,
+    id_dim_institucion BIGINT,
+    id_dim_sede BIGINT,
+    id_dim_pais INT,
+    id_dim_estudio BIGINT,
+    fec_pago_matricula date,
+    importe_matricula double, 
+    importe_descuento_matricula double,
+    importe_neto_matricula double,
+    id_dim_localidad BIGINT,
+    id_dim_tipo_formacion BIGINT,
+    id_dim_tipo_negocio BIGINT,
+    nombre_scoring string,
+    puntos_scoring double,
+    dias_cierre int,
+    id_dim_motivo_cierre BIGINT,
+    fec_procesamiento timestamp,
+    sistema_origen string,
+    tiempo_de_maduracion int,
+    new_enrollent INT,
+    lead_neto INT,
+    activo INT
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/fct_venta';
@@ -680,27 +719,11 @@ spark.sql(sql_query)
 
 # COMMAND ----------
 
-fecha date,
-escenario string,
-titulacion string,
-centro string,
-sede string,
-modalidad string,
-num_leads_netos integer,
-num_leads_brutos integer,
-new_enrollment integer,
-importe_venta_neta double,
-importe_venta_bruta double,
-importe_captacion double,
-processdate timestamp
-
-# COMMAND ----------
-
 # DBTITLE 1,dim_producto
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_producto
 (
-    idDimProducto BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    idDimProducto BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
     codProductoOrigen STRING,
     codProductoCorto STRING,
     codProducto STRING NOT NULL,
@@ -757,9 +780,9 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_programa
 (
-    idDimPrograma BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-    nombrePrograma STRING NOT NULL,
+    idDimPrograma BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
     codPrograma STRING NOT NULL,
+    nombrePrograma STRING NOT NULL,
     tipoPrograma STRING,
     entidadLegal STRING,
     especialidad STRING,
@@ -780,7 +803,7 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_vertical 
 (
-    idDimVertical BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    idDimVertical BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
     nombreVertical STRING,
     nombreVerticalCorto STRING,
     ETLcreatedDate TIMESTAMP,
@@ -798,7 +821,7 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_entidad_legal 
 (
-    idDimInstitucion BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    idDimInstitucion BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
     nombreInstitucion STRING NOT NULL,
     codigoEntidadLegal STRING NOT NULL,  -- Aquí aplicamos NOT NULL desde el inicio
     ETLcreatedDate TIMESTAMP,
@@ -816,8 +839,12 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_motivo_perdida 
 (
-    idDimMotivoPerdida BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
-    nombreDimMotivoPerdida STRING NOT NULL,
+    idDimMotivoPerdida BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    nombreDimMotivoPerdida STRING,
+    cantidad STRING,
+    calidad STRING,
+    esBruto BIGINT,
+    esNeto BIGINT,
     ETLcreatedDate TIMESTAMP,
     ETLupdatedDate TIMESTAMP
 )
@@ -833,7 +860,7 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_especialidad 
 (
-    idDimEspecialidad BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1),
+    idDimEspecialidad BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
     nombreEspecialidad STRING NOT NULL,
     codEspecialidad STRING NOT NULL,
     ETLcreatedDate TIMESTAMP,
@@ -851,7 +878,7 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_utm_campaign 
 (
-    id_dim_utm_campaign BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1) PRIMARY KEY,
+    id_dim_utm_campaign BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1) PRIMARY KEY,
     utm_campaign_id STRING NOT NULL,
     utm_campaign_name STRING,
     utm_strategy STRING,
@@ -871,7 +898,7 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_utm_adset 
 (
-    id_dim_utm_ad BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1) PRIMARY KEY,
+    id_dim_utm_ad BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1) PRIMARY KEY,
     utm_ad_id STRING NOT NULL,
     utm_adset_id STRING,
     utm_term STRING,
@@ -890,7 +917,7 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_utm_source 
 (
-    id_dim_utm_source BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 1 INCREMENT BY 1) PRIMARY KEY,
+    id_dim_utm_source BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1) PRIMARY KEY,
     utm_source STRING NOT NULL,
     utm_type STRING,
     utm_medium STRING,
@@ -900,6 +927,68 @@ CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_utm_source
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_utm_source';
+"""
+
+spark.sql(sql_query)
+
+# COMMAND ----------
+
+# DBTITLE 1,fctventa Zoho
+
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.fctventa
+(
+    id_venta BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    cod_lead BIGINT,
+    cod_oportunidad BIGINT,
+    nombre string,
+    email string,
+    telefono string,
+    nombre_contacto string,
+    id_dim_propietario_lead BIGINT,
+    importe_venta double,
+    importe_descuento double,
+    importe_venta_neta double,
+    id_dim_estado_venta BIGINT,
+    id_dim_etapa_venta BIGINT,
+    posibilidad_venta double,
+    fec_creacion date,
+    fec_modificacion date,
+    fec_cierre date,
+    id_dim_modalidad BIGINT,
+    id_dim_institucion BIGINT,
+    id_dim_sede BIGINT,
+    id_dim_pais INT,
+    fec_pago_matricula date,
+    importe_matricula double,
+    importe_descuento_matricula double,
+    importe_neto_matricula double,
+    ciudad string,
+    provincia string,
+    calle string,
+    codigo_postal string,
+    id_dim_programa BIGINT,
+    id_dim_producto BIGINT,
+    id_dim_utm_campaign BIGINT,
+    id_dim_utm_ad BIGINT,
+    id_dim_utm_source BIGINT,
+    id_dim_nacionalidad BIGINT,
+    id_dim_tipo_formacion BIGINT,
+    id_dim_tipo_negocio BIGINT,
+    nombre_scoring string,
+    puntos_scoring double,
+    dias_cierre int,
+    fecAnulacion TIMESTAMP,
+    id_dim_motivo_perdida BIGINT,
+    kpi_new_enrollent BIGINT,
+    kpi_lead_neto BIGINT,
+    kpi_lead_bruto BIGINT,
+    activo BIGINT,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/fctventa';
 """
 
 spark.sql(sql_query)

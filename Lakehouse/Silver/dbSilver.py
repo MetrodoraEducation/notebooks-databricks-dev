@@ -298,11 +298,12 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS silver_lakehouse.dim_pais
 (
-id int,
-nombre string,
-name string,
-iso2 string,	
-iso3 string
+    id int,
+    nombre string,
+    name string,
+    nombre_nacionalidad string,
+    iso2 string,	
+    iso3 string
 )
 USING DELTA
 LOCATION 'abfss://silver@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_pais';
@@ -387,8 +388,8 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS silver_lakehouse.mapeo_estudio
 (
-estudio string, 
-estudio_norm string
+    estudio string, 
+    estudio_norm string
 )
 USING DELTA
 LOCATION 'abfss://silver@{storage_account_name}.dfs.core.windows.net/lakehouse/mapeo_estudio';
@@ -426,6 +427,124 @@ LOCATION 'abfss://silver@{storage_account_name}.dfs.core.windows.net/lakehouse/d
 """
 
 spark.sql(sql_query)
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **Classlife**
+
+# COMMAND ----------
+
+# DBTITLE 1,Table ClasslifeTitulaciones
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS silver_lakehouse.classlifetitulaciones
+(
+        modalidad STRING,
+    fecha_inicio_docencia DATE,
+    entidad_legal STRING,
+    fecha_inicio DATE,
+    meses_cursos_open INT,
+    admisionsino STRING,
+    degree_title STRING,
+    vertical STRING,
+    grupo STRING,
+    degree_id INT,
+    meses_duracion INT,
+    sede STRING,
+    horas_acreditadas INT,
+    plazas INT,
+    fecha_fin_pago DATE,
+    horas_presenciales_2 INT,
+    codigo_programa STRING,
+    area_title STRING,
+    fecha_inicio_cuotas DATE,
+    enroll_group_id INT,
+    tarifa_ampliacion DOUBLE,
+    tarifa_euneiz DOUBLE,
+    term_title STRING,
+    certificado_euneiz_incluido_2 STRING,
+    especialidad STRING,
+    fecha_fin DATE,
+    creditos DOUBLE,
+    enroll_group_id_2 INT,
+    pre_enrolled INT,
+    fecha_fin_cuotas DATE,
+    ano_inicio_docencia INT,
+    fecha_fin_reconocimiento_ingresos DATE,
+    term_id INT,
+    fecha_inicio_reconocimiento_ingresos DATE,
+    tarifa_matricula DOUBLE,
+    area_id INT,
+    admisionsino_2 STRING,
+    year INT,
+    codigo_sede STRING,
+    plan_title STRING,
+    no_ultimas_plazas STRING,
+    zoho_id STRING,
+    ano_inicio_docencia_2 INT,
+    mesesampliacion STRING,
+    codigo_antiguo STRING,
+    nombre_del_programa_oficial_completo STRING,
+    entidad_legal_codigo STRING,
+    codigo_entidad_legal STRING,
+    fecha_fin_docencia DATE,
+    nombreweb STRING,
+    tiponegocio_2 STRING,
+    enroll_end TIMESTAMP,
+    modalidad_code STRING,
+    ciclo_title STRING,
+    building_title STRING,
+    school_id INT,
+    grupo_2 STRING,
+    building_id INT,
+    plan_id INT,
+    availables INT,
+    ultima_actualizacion TIMESTAMP,
+    mes_inicio_docencia_2 INT,
+    enrolled INT,
+    horas_acreditadas_2 INT,
+    receipts_count INT,
+    tiponegocio STRING,
+    horas_presenciales INT,
+    enroll_group_name STRING,
+    fecha_inicio_pago DATE,
+    enroll_alias STRING,
+    school_name STRING,
+    cuotas_docencia INT,
+    enroll_ini TIMESTAMP,
+    acreditado STRING,
+    descripcion_calendario STRING,
+    destinatarios STRING,
+    nombre_antiguo_de_programa STRING,
+    certificado_euneiz_incluido STRING,
+    seats INT,
+    codigo_especialidad STRING,
+    descripcion_calendario_2 STRING,
+    ciclo_id INT,
+    section_id INT,
+    codigo_vertical STRING,
+    mes_inicio_docencia INT,
+    section_title STRING,
+    fecha_creacion TIMESTAMP,
+    tarifa_docencia DOUBLE,
+    codigo_vertical_2 STRING,
+    total_tarifas DOUBLE,
+    roaster_ind INT,
+    processdate TIMESTAMP,
+    sourcesystem STRING
+)
+USING DELTA
+LOCATION 'abfss://silver@{storage_account_name}.dfs.core.windows.net/lakehouse/classlifetitulaciones';
+"""
+
+# Ejecutar la consulta SQL con Spark
+spark.sql(sql_query)
+
+
+# COMMAND ----------
+
+# MAGIC %md
+# MAGIC **Zoho CRM**
 
 # COMMAND ----------
 
@@ -764,119 +883,6 @@ spark.sql(sql_query)
 
 # COMMAND ----------
 
-# DBTITLE 1,Table ClasslifeTitulaciones
-sql_query = f"""
-CREATE TABLE IF NOT EXISTS silver_lakehouse.classlifetitulaciones
-(
-    modalidad STRING,
-    fecha_inicio_docencia STRING,
-    entidad_legal STRING,
-    fecha_inicio STRING,
-    meses_cursos_open BIGINT,
-    admisionsino STRING,
-    degree_title STRING,
-    vertical STRING,
-    grupo STRING,
-    num_plazas BIGINT,
-    degree_id STRING,
-    meses_duracion BIGINT,
-    sede STRING,
-    horas_acreditadas BIGINT,
-    plazas BIGINT,
-    fecha_fin_pago STRING,
-    horas_presenciales_2 BIGINT,
-    num_plazas_ultimas BIGINT,
-    pre_enrolled BIGINT,
-    codigo_programa STRING,
-    area_title STRING,
-    fecha_inicio_cuotas STRING,
-    enroll_group_id STRING,
-    tarifa_ampliacion DOUBLE,
-    tarifa_euneiz DOUBLE,
-    term_title STRING,
-    certificado_euneiz_incluido_2 STRING,
-    especialidad STRING,
-    fecha_fin STRING,
-    num_alumnos_inscritos BIGINT,
-    creditos DOUBLE,
-    availables BIGINT,
-    enroll_group_id_2 STRING,
-    fecha_fin_cuotas STRING,
-    ano_inicio_docencia BIGINT,
-    fecha_fin_reconocimiento_ingresos STRING,
-    term_id STRING,
-    fecha_inicio_reconocimiento_ingresos STRING,
-    tarifa_matricula DOUBLE,
-    area_id STRING,
-    enrolled BIGINT,
-    admisionsino_2 STRING,
-    year BIGINT,
-    seats BIGINT,
-    codigo_sede STRING,
-    plan_title STRING,
-    no_ultimas_plazas BIGINT,
-    ano_inicio_docencia_2 BIGINT,
-    mesesampliacion BIGINT,
-    codigo_antiguo STRING,
-    nombre_del_programa_oficial_completo STRING,
-    entidad_legal_codigo STRING,
-    codigo_entidad_legal STRING,
-    fecha_fin_docencia STRING,
-    nombreweb STRING,
-    tiponegocio_2 STRING,
-    enroll_end STRING,
-    modalidad_code STRING,
-    ciclo_title STRING,
-    building_title STRING,
-    school_id STRING,
-    grupo_2 STRING,
-    building_id STRING,
-    plan_id STRING,
-    ultima_actualizacion TIMESTAMP,
-    mes_inicio_docencia_2 BIGINT,
-    horas_acreditadas_2 BIGINT,
-    receipts_count BIGINT,
-    tiponegocio STRING,
-    horas_presenciales BIGINT,
-    enroll_group_name STRING,
-    codigo_modalidad STRING,
-    fecha_inicio_pago STRING,
-    enroll_alias STRING,
-    building STRING,
-    school_name STRING,
-    cuotas_docencia BIGINT,
-    enroll_ini STRING,
-    acreditado STRING,
-    descripcion_calendario STRING,
-    destinatarios STRING,
-    enroll_pago_ini_t STRING,
-    nombre_antiguo_de_programa STRING,
-    certificado_euneiz_incluido STRING,
-    codigo_especialidad STRING,
-    descripcion_calendario_2 STRING,
-    ciclo_id STRING,
-    section_id STRING,
-    codigo_vertical STRING,
-    mes_inicio_docencia BIGINT,
-    section_title STRING,
-    fecha_creacion TIMESTAMP,
-    tarifa_docencia DOUBLE,
-    codigo_vertical_2 STRING,
-    total_tarifas DOUBLE,
-    roaster_ind BIGINT,
-    processdate TIMESTAMP,
-    sourcesystem STRING
-)
-USING DELTA
-LOCATION 'abfss://silver@{storage_account_name}.dfs.core.windows.net/lakehouse/classlifetitulaciones';
-"""
-
-# Ejecutar la consulta SQL con Spark
-spark.sql(sql_query)
-
-
-# COMMAND ----------
-
 # DBTITLE 1,Tablon Leads_and_Deals
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS silver_lakehouse.tablon_leads_and_deals
@@ -939,6 +945,8 @@ CREATE TABLE IF NOT EXISTS silver_lakehouse.tablon_leads_and_deals
     fecha_hora_Pagado TIMESTAMP,
     fecha_Creacion_Oportunidad TIMESTAMP,
     fecha_Modificacion_Oportunidad TIMESTAMP,
+    nombre_estado_venta STRING,
+    fecha_hora_anulacion TIMESTAMP,
     processdate TIMESTAMP,
     sourcesystem STRING
 )

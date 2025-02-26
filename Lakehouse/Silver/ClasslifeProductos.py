@@ -173,7 +173,7 @@ def clean_column_names(df):
             .replace("ú", "u")
             .replace("`", "")
             .replace("metas_", "")
-            .replace("counters_", "")
+            .replace("counters_enroll_group_id", "enroll_group_id_2")
             .replace("no__", "no_")
         )
 
@@ -222,21 +222,21 @@ classlifetitulaciones_df = classlifetitulaciones_df.select(
     *[col(c).alias(c.strip().replace("`", "")) for c in columnas_seleccionadas]
 )
 
-# 📌 Verificar si `tarifa_matricula` ahora está accesible
-if "tarifa_matricula" in classlifetitulaciones_df.columns:
-    print("✅ `tarifa_matricula` ahora está disponible correctamente.")
-else:
-    print("❌ ERROR: `tarifa_matricula` sigue sin encontrarse en el DataFrame.")
+## 📌 Verificar si `tarifa_matricula` ahora está accesible
+#if "tarifa_matricula" in classlifetitulaciones_df.columns:
+#    print("✅ `tarifa_matricula` ahora está disponible correctamente.")
+#else:
+#    print("❌ ERROR: `tarifa_matricula` sigue sin encontrarse en el DataFrame.")
 
 # 📌 Mostrar los primeros registros
 display(classlifetitulaciones_df)
 
 # COMMAND ----------
 
-from pyspark.sql.functions import col, to_date, to_timestamp, lit, current_timestamp, from_unixtime
+from pyspark.sql.functions import col, to_date, to_timestamp, lit, current_timestamp
 from pyspark.sql.types import StringType, IntegerType, DoubleType
 
-# 📌 Aplicar transformaciones a las columnas
+# 📌 Aplicar transformaciones a las columnas con nombres corregidos
 classlifetitulaciones_df = classlifetitulaciones_df \
     .withColumn("processdate", current_timestamp()) \
     .withColumn("sourcesystem", lit("classlifetitulaciones")) \
@@ -256,19 +256,16 @@ classlifetitulaciones_df = classlifetitulaciones_df \
     .withColumn("horas_acreditadas", col("horas_acreditadas").cast(IntegerType())) \
     .withColumn("horas_presenciales", col("horas_presenciales").cast(IntegerType())) \
     .withColumn("horas_presenciales_2", col("horas_presenciales_2").cast(IntegerType())) \
-    .withColumn("num_plazas", col("num_plazas").cast(IntegerType())) \
-    .withColumn("num_plazas_ultimas", col("num_plazas_ultimas").cast(IntegerType())) \
+    .withColumn("enroll_group_id", col("enroll_group_id").cast(IntegerType())) \
+    .withColumn("enroll_group_id_2", col("enroll_group_id_2").cast(IntegerType())) \
+    .withColumnRenamed("counters_pre_enrolled", "pre_enrolled") \
     .withColumn("pre_enrolled", col("pre_enrolled").cast(IntegerType())) \
     .withColumn("tarifa_ampliacion", col("tarifa_ampliacion").cast(DoubleType())) \
     .withColumn("tarifa_euneiz", col("tarifa_euneiz").cast(DoubleType())) \
     .withColumn("tarifa_matricula", col("tarifa_matricula").cast(DoubleType())) \
     .withColumn("tarifa_docencia", col("tarifa_docencia").cast(DoubleType())) \
     .withColumn("total_tarifas", col("total_tarifas").cast(DoubleType())) \
-    .withColumn("num_alumnos_inscritos", col("num_alumnos_inscritos").cast(IntegerType())) \
     .withColumn("creditos", col("creditos").cast(DoubleType())) \
-    .withColumn("availables", col("availables").cast(IntegerType())) \
-    .withColumn("enrolled", col("enrolled").cast(IntegerType())) \
-    .withColumn("seats", col("seats").cast(IntegerType())) \
     .withColumn("cuotas_docencia", col("cuotas_docencia").cast(IntegerType())) \
     .withColumn("receipts_count", col("receipts_count").cast(IntegerType())) \
     .withColumn("roaster_ind", col("roaster_ind").cast(IntegerType())) \
@@ -283,7 +280,6 @@ classlifetitulaciones_df = classlifetitulaciones_df \
     .withColumn("codigo_programa", col("codigo_programa").cast(StringType())) \
     .withColumn("codigo_vertical", col("codigo_vertical").cast(StringType())) \
     .withColumn("codigo_vertical_2", col("codigo_vertical_2").cast(StringType())) \
-    .withColumn("codigo_modalidad", col("codigo_modalidad").cast(StringType())) \
     .withColumn("codigo_sede", col("codigo_sede").cast(StringType())) \
     .withColumn("codigo_entidad_legal", col("codigo_entidad_legal").cast(StringType())) \
     .withColumn("modalidad_code", col("modalidad_code").cast(StringType())) \
@@ -301,14 +297,17 @@ classlifetitulaciones_df = classlifetitulaciones_df \
     .withColumn("term_title", col("term_title").cast(StringType())) \
     .withColumn("building_id", col("building_id").cast(IntegerType())) \
     .withColumn("building_title", col("building_title").cast(StringType())) \
-    .withColumn("building", col("building").cast(StringType())) \
-    .withColumn("enroll_group_id", col("enroll_group_id").cast(IntegerType())) \
+    .withColumnRenamed("counters_availables", "availables") \
+    .withColumn("availables", col("availables").cast(IntegerType())) \
+    .withColumnRenamed("counters_enrolled", "enrolled") \
+    .withColumn("enrolled", col("enrolled").cast(IntegerType())) \
+    .withColumnRenamed("counters_seats", "seats") \
+    .withColumn("seats", col("seats").cast(IntegerType())) \
     .withColumn("enroll_group_name", col("enroll_group_name").cast(StringType())) \
     .withColumn("enroll_alias", col("enroll_alias").cast(StringType())) \
     .withColumn("especialidad", col("especialidad").cast(StringType())) \
     .withColumn("destinatarios", col("destinatarios").cast(StringType())) \
     .withColumn("descripcion_calendario", col("descripcion_calendario").cast(StringType())) \
-    .withColumn("descripcion_calendario_2", col("descripcion_calendario_2").cast(StringType())) \
     .withColumn("nombre_antiguo_de_programa", col("nombre_antiguo_de_programa").cast(StringType())) \
     .withColumn("nombre_del_programa_oficial_completo", col("nombre_del_programa_oficial_completo").cast(StringType())) \
     .withColumn("nombreweb", col("nombreweb").cast(StringType())) 

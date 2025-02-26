@@ -36,19 +36,36 @@
 # COMMAND ----------
 
 # MAGIC %sql
+# MAGIC -- 1️⃣ 🔹 Asegurar que el registro `idDimEspecialidad = -1` existe con valores `n/a`
 # MAGIC MERGE INTO gold_lakehouse.dim_especialidad AS target
-# MAGIC USING dim_especialidad_view AS source
-# MAGIC ON UPPER(target.nombreEspecialidad) = UPPER(source.nombreEspecialidad)
+# MAGIC USING (
+# MAGIC     SELECT 'n/a' AS nombreEspecialidad, 'n/a' AS codEspecialidad
+# MAGIC ) AS source
+# MAGIC ON target.nombreEspecialidad = 'n/a'
+# MAGIC WHEN NOT MATCHED THEN 
+# MAGIC     INSERT (nombreEspecialidad, codEspecialidad, ETLcreatedDate, ETLupdatedDate)
+# MAGIC     VALUES ('n/a', 'n/a', current_timestamp(), current_timestamp());
+# MAGIC
+# MAGIC -- 2️⃣ 🔹 MERGE para insertar o actualizar `dim_especialidad`, excluyendo `n/a`
+# MAGIC MERGE INTO gold_lakehouse.dim_especialidad AS target
+# MAGIC USING (
+# MAGIC     SELECT DISTINCT 
+# MAGIC         TRIM(UPPER(nombreEspecialidad)) AS nombreEspecialidad,
+# MAGIC         TRIM(codEspecialidad) AS codEspecialidad,
+# MAGIC         current_timestamp() AS ETLcreatedDate,
+# MAGIC         current_timestamp() AS ETLupdatedDate
+# MAGIC     FROM dim_especialidad_view
+# MAGIC     WHERE nombreEspecialidad IS NOT NULL 
+# MAGIC       AND nombreEspecialidad <> '' 
+# MAGIC       AND nombreEspecialidad <> 'n/a'  -- Evitar modificar el registro especial
+# MAGIC ) AS source
+# MAGIC ON UPPER(target.nombreEspecialidad) = source.nombreEspecialidad
+# MAGIC
 # MAGIC WHEN MATCHED THEN 
 # MAGIC     UPDATE SET 
 # MAGIC         target.codEspecialidad = source.codEspecialidad,
-# MAGIC         target.ETLupdatedDate = CURRENT_TIMESTAMP
+# MAGIC         target.ETLupdatedDate = current_timestamp()
+# MAGIC
 # MAGIC WHEN NOT MATCHED THEN 
 # MAGIC     INSERT (nombreEspecialidad, codEspecialidad, ETLcreatedDate, ETLupdatedDate)
-# MAGIC     VALUES (source.nombreEspecialidad, source.codEspecialidad, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-# MAGIC
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select * from gold_lakehouse.dim_especialidad
+# MAGIC     VALUES (source.nombreEspecialidad, source.codEspecialidad, source.ETLcreatedDate, source.ETLupdatedDate);

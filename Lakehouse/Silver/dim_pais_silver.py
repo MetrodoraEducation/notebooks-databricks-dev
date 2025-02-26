@@ -23,6 +23,11 @@ dimpais_df.createOrReplaceTempView("dimpais_source_view")
 # COMMAND ----------
 
 # MAGIC %sql
+# MAGIC select * from dimpais_source_view
+
+# COMMAND ----------
+
+# MAGIC %sql
 # MAGIC MERGE INTO silver_lakehouse.dim_pais
 # MAGIC USING dimpais_source_view 
 # MAGIC ON silver_lakehouse.dim_pais.id = dimpais_source_view.id

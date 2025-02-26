@@ -6,23 +6,48 @@
 
 # MAGIC %sql
 # MAGIC CREATE OR REPLACE TEMPORARY VIEW tipo_negocio_view AS 
-# MAGIC SELECT 
-# MAGIC     DISTINCT tipo_negocio_desc AS tipo_negocio_desc,
-# MAGIC     cod_tipo_negocio	AS cod_tipo_negocio
+# MAGIC     SELECT 
+# MAGIC         DISTINCT tipo_negocio_desc AS tipo_negocio_desc,
+# MAGIC         cod_tipo_negocio	AS cod_tipo_negocio
+# MAGIC     FROM gold_lakehouse.dim_estudio;
 # MAGIC
-# MAGIC FROM 
-# MAGIC     gold_lakehouse.dim_estudio
+# MAGIC select * from tipo_negocio_view;
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC MERGE INTO gold_lakehouse.dim_tipo_negocio
-# MAGIC USING tipo_negocio_view 
-# MAGIC ON gold_lakehouse.dim_tipo_negocio.tipo_negocio_desc = tipo_negocio_view.tipo_negocio_desc
+# MAGIC -- 1️⃣ 🔹 Asegurar que el registro `-1` existe con valores `n/a`
+# MAGIC MERGE INTO gold_lakehouse.dim_tipo_negocio AS target
+# MAGIC USING (
+# MAGIC     SELECT 'n/a' AS tipo_negocio_desc, 'n/a' AS cod_tipo_negocio
+# MAGIC ) AS source
+# MAGIC ON target.id_dim_tipo_negocio = -1
+# MAGIC WHEN NOT MATCHED THEN 
+# MAGIC     INSERT (tipo_negocio_desc, cod_tipo_negocio)
+# MAGIC     VALUES ('n/a', 'n/a');
 # MAGIC
-# MAGIC WHEN MATCHED THEN UPDATE SET gold_lakehouse.dim_tipo_negocio.cod_tipo_negocio = tipo_negocio_view.cod_tipo_negocio
-# MAGIC WHEN NOT MATCHED THEN INSERT (gold_lakehouse.dim_tipo_negocio.tipo_negocio_desc,gold_lakehouse.dim_tipo_negocio.cod_tipo_negocio)
-# MAGIC VALUES (tipo_negocio_view.tipo_negocio_desc,tipo_negocio_view.cod_tipo_negocio)
+# MAGIC -- 2️⃣ 🔹 Realizar el MERGE para actualizar o insertar nuevos registros de `tipo_negocio_view`
+# MAGIC MERGE INTO gold_lakehouse.dim_tipo_negocio AS target
+# MAGIC USING (
+# MAGIC     SELECT DISTINCT tipo_negocio_desc, cod_tipo_negocio FROM tipo_negocio_view
+# MAGIC ) AS source
+# MAGIC ON target.tipo_negocio_desc = source.tipo_negocio_desc
+# MAGIC
+# MAGIC -- 🔹 Si el registro ya existe, actualiza su código
+# MAGIC WHEN MATCHED THEN 
+# MAGIC     UPDATE SET target.cod_tipo_negocio = source.cod_tipo_negocio
+# MAGIC
+# MAGIC -- 🔹 Si el registro no existe, se inserta sin tocar el ID
+# MAGIC WHEN NOT MATCHED THEN
+# MAGIC     INSERT (tipo_negocio_desc, cod_tipo_negocio, ETLcreatedDate, ETLupdatedDate)
+# MAGIC     VALUES (source.tipo_negocio_desc, source.cod_tipo_negocio, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC -- 3️⃣ 🔹 Asegurar que solo haya un único ID `-1`
+# MAGIC DELETE FROM gold_lakehouse.dim_tipo_negocio
+# MAGIC WHERE tipo_negocio_desc = 'n/a' AND id_dim_tipo_negocio <> -1;
 
 # COMMAND ----------
 

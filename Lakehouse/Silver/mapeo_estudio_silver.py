@@ -12,8 +12,17 @@ mapeo_estudio_df.createOrReplaceTempView("mapeo_estudio_view")
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC MERGE INTO silver_lakehouse.mapeo_estudio
-# MAGIC USING mapeo_estudio_view 
-# MAGIC ON silver_lakehouse.mapeo_estudio.estudio = mapeo_estudio.estudio
-# MAGIC WHEN MATCHED THEN UPDATE SET *
-# MAGIC WHEN NOT MATCHED THEN INSERT *
+# MAGIC WITH deduplicated_source AS (
+# MAGIC     SELECT *, 
+# MAGIC            ROW_NUMBER() OVER (PARTITION BY TRIM(UPPER(estudio_norm)) ORDER BY estudio) AS row_num
+# MAGIC     FROM mapeo_estudio_view
+# MAGIC )
+# MAGIC MERGE INTO silver_lakehouse.mapeo_estudio AS target
+# MAGIC USING (SELECT * FROM deduplicated_source WHERE row_num = 1) AS source
+# MAGIC ON TRIM(UPPER(target.estudio)) = TRIM(UPPER(source.estudio)) -- Normaliza espacios y mayúsculas
+# MAGIC WHEN MATCHED THEN 
+# MAGIC UPDATE SET target.estudio = source.estudio,
+# MAGIC            target.estudio_norm = source.estudio_norm
+# MAGIC WHEN NOT MATCHED THEN 
+# MAGIC INSERT (estudio, estudio_norm) 
+# MAGIC VALUES (source.estudio, source.estudio_norm);
