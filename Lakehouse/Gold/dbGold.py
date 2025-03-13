@@ -69,6 +69,7 @@ CREATE OR REPLACE TABLE gold_lakehouse.dim_fecha (
     dia_anio INT,
     semana_anio INT,
     numero_dias_mes INT, 
+    dia_mes INT,
     primer_dia_mes DATE, 
     ultimo_dia_mes DATE, 
     anio_numero INT,
@@ -130,29 +131,6 @@ CREATE OR REPLACE TABLE gold_lakehouse.dim_pais (
 )
 USING DELTA
 LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_pais';
-"""
-
-spark.sql(sql_query)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC **Tabla dim_nacionalidad**
-
-# COMMAND ----------
-
-
-sql_query = f"""
-CREATE OR REPLACE TABLE gold_lakehouse.dim_nacionalidad (
-    id int,
-    nombre string,
-    name string,
-    nombre_nacionalidad string,
-    iso2 string,	
-    iso3 string
-)
-USING DELTA
-LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_nacionalidad';
 """
 
 spark.sql(sql_query)
@@ -309,6 +287,7 @@ sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_etapa_venta
 (
     id_dim_etapa_venta BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    orden_etapa BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
     nombre_etapa_venta STRING,
     nombreEtapaVentaAgrupado STRING,
     esNe BIGINT,
@@ -356,7 +335,6 @@ CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_modalidad
 (
         id_dim_modalidad BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
         nombre_modalidad STRING,
-        codigo STRING,
         ETLcreatedDate TIMESTAMP,
         ETLupdatedDate TIMESTAMP
 )
@@ -423,6 +401,7 @@ sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_sede
 (
     id_dim_sede BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    number_codigo_sede BIGINT,
     nombre_sede STRING,
     codigo_sede STRING,
     ETLcreatedDate TIMESTAMP,
@@ -632,7 +611,7 @@ CREATE TABLE IF NOT EXISTS gold_lakehouse.fct_venta
     tiempo_de_maduracion int,
     new_enrollent INT,
     lead_neto INT,
-    activo INT
+    activo INT,
     ETLcreatedDate TIMESTAMP,
     ETLupdatedDate TIMESTAMP
 )
@@ -719,52 +698,61 @@ spark.sql(sql_query)
 
 # COMMAND ----------
 
+# MAGIC %md
+# MAGIC **Tables Zoho**
+
+# COMMAND ----------
+
 # DBTITLE 1,dim_producto
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_producto
 (
-    idDimProducto BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
-    codProductoOrigen STRING,
-    codProductoCorto STRING,
-    codProducto STRING NOT NULL,
-    origenProducto STRING,
-    tipoProducto STRING,
+    id_Dim_Producto BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    cod_Producto_Origen STRING,
+    cod_Producto_Corto STRING,
+    cod_Producto STRING,
+    origen_Producto STRING,
+    tipo_Producto STRING,
     area STRING,
-    nombreOficial STRING,
+    nombre_Oficial STRING,
     curso STRING,
-    numeroCurso INT,
-    fechaInicioCurso DATE,
-    fechaFinCurso DATE,
+    numero_Curso INT,
+    codigo_sede BIGINT,
+    sede STRING,
     ciclo_id INT,
-    numPlazas INT,
-    numGrupo INT,
+    num_Plazas INT,
+    num_Grupo INT,
     vertical STRING,
-    codVertical STRING,
+    cod_Vertical STRING,
     especialidad STRING,
-    codEspecialidad STRING,
-    numCreditos DOUBLE,
-    codPrograma STRING,
-    admiteAdmision STRING,
-    tipoNegocio STRING,
+    cod_Especialidad STRING,
+    num_Creditos DOUBLE,
+    cod_Programa STRING,
+    admite_Admision STRING,
+    tipo_Negocio STRING,
     acreditado STRING,
-    nombreWeb STRING,
-    entidadLegal STRING,
-    codEntidadLegal STRING,
+    nombre_Web STRING,
+    entidad_Legal STRING,
+    cod_Entidad_Legal STRING,
     modalidad STRING,
-    codModalidad STRING,
-    fechaInicio DATE,
-    fechaFin DATE,
-    mesesDuracion INT,
-    horasAcreditadas INT,
-    horasPresenciales INT,
-    fechaInicioPago DATE,
-    fechaFinPago DATE,
-    numCuotas INT,
-    importeCertificado DOUBLE,
-    importeAmpliacion DOUBLE,
-    importeDocencia DOUBLE,
-    importeMatricula DOUBLE,
-    importeTotal DOUBLE,
+    cod_Modalidad STRING,
+    fecha_Inicio DATE,
+    fecha_Fin DATE,
+    meses_Duracion INT,
+    horas_Acreditadas INT,
+    horas_Presenciales INT,
+    fecha_Inicio_Pago DATE,
+    fecha_Fin_Pago DATE,
+    num_Cuotas INT,
+    importe_Certificado DOUBLE,
+    importe_Ampliacion DOUBLE,
+    importe_Docencia DOUBLE,
+    importe_Matricula DOUBLE,
+    importe_Total DOUBLE,
+    fecha_Inicio_Curso DATE,
+    fecha_Fin_Curso DATE,
+    Fecha_Inicio_Reconocimiento DATE,
+    Fecha_Fin_Reconocimiento DATE,
     ETLcreatedDate TIMESTAMP,
     ETLupdatedDate TIMESTAMP
 )
@@ -780,14 +768,14 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_programa
 (
-    idDimPrograma BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
-    codPrograma STRING NOT NULL,
-    nombrePrograma STRING NOT NULL,
-    tipoPrograma STRING,
-    entidadLegal STRING,
+    id_Dim_Programa BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    cod_Programa STRING NOT NULL,
+    nombre_Programa STRING NOT NULL,
+    tipo_Programa STRING,
+    entidad_Legal STRING,
     especialidad STRING,
     vertical STRING,
-    nombreProgramaCompleto STRING,
+    nombre_Programa_Completo STRING,
     ETLcreatedDate TIMESTAMP,
     ETLupdatedDate TIMESTAMP
 )
@@ -803,9 +791,9 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_vertical 
 (
-    idDimVertical BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
-    nombreVertical STRING,
-    nombreVerticalCorto STRING,
+    id_Dim_Vertical BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    nombre_Vertical STRING,
+    nombre_Vertical_Corto STRING,
     ETLcreatedDate TIMESTAMP,
     ETLupdatedDate TIMESTAMP
 )
@@ -821,9 +809,9 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_entidad_legal 
 (
-    idDimInstitucion BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
-    nombreInstitucion STRING NOT NULL,
-    codigoEntidadLegal STRING NOT NULL,  -- Aquí aplicamos NOT NULL desde el inicio
+    id_Dim_Institucion BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    nombre_Institucion STRING NOT NULL,
+    codigo_Entidad_Legal STRING NOT NULL,
     ETLcreatedDate TIMESTAMP,
     ETLupdatedDate TIMESTAMP
 )
@@ -839,8 +827,8 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_motivo_perdida 
 (
-    idDimMotivoPerdida BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
-    nombreDimMotivoPerdida STRING,
+    id_Dim_Motivo_Perdida BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    nombre_Dim_Motivo_Perdida STRING,
     cantidad STRING,
     calidad STRING,
     esBruto BIGINT,
@@ -860,9 +848,9 @@ spark.sql(sql_query)
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_especialidad 
 (
-    idDimEspecialidad BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
-    nombreEspecialidad STRING NOT NULL,
-    codEspecialidad STRING NOT NULL,
+    id_Dim_Especialidad BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    nombre_Especialidad STRING NOT NULL,
+    cod_Especialidad STRING NOT NULL,
     ETLcreatedDate TIMESTAMP,
     ETLupdatedDate TIMESTAMP
 )
@@ -933,40 +921,66 @@ spark.sql(sql_query)
 
 # COMMAND ----------
 
+# DBTITLE 1,dim_nacionalidad
+
+sql_query = f"""
+CREATE OR REPLACE TABLE gold_lakehouse.dim_nacionalidad (
+    id int,
+    nombre string,
+    name string,
+    nombre_nacionalidad string,
+    iso2 string,	
+    iso3 string
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_nacionalidad';
+"""
+
+spark.sql(sql_query)
+
+# COMMAND ----------
+
 # DBTITLE 1,fctventa Zoho
 
 sql_query = f"""
 CREATE TABLE IF NOT EXISTS gold_lakehouse.fctventa
 (
-    id_venta BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1),
+    id_venta BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 0 INCREMENT BY 1),
     cod_lead BIGINT,
     cod_oportunidad BIGINT,
     nombre string,
     email string,
     telefono string,
     nombre_contacto string,
-    id_dim_propietario_lead BIGINT,
     importe_venta double,
     importe_descuento double,
-    importe_venta_neta double,
-    id_dim_estado_venta BIGINT,
-    id_dim_etapa_venta BIGINT,
+    importe_venta_neto double,
     posibilidad_venta double,
-    fec_creacion date,
-    fec_modificacion date,
-    fec_cierre date,
-    id_dim_modalidad BIGINT,
-    id_dim_institucion BIGINT,
-    id_dim_sede BIGINT,
-    id_dim_pais INT,
-    fec_pago_matricula date,
-    importe_matricula double,
-    importe_descuento_matricula double,
-    importe_neto_matricula double,
     ciudad string,
     provincia string,
     calle string,
     codigo_postal string,
+    nombre_scoring string,
+    puntos_scoring double,
+    dias_cierre int,
+    fec_creacion date,
+    fec_modificacion date,
+    fec_cierre date,
+    fec_pago_matricula date,
+    fecha_hora_anulacion TIMESTAMP,
+    fecha_Modificacion_Lead TIMESTAMP,
+    fecha_Modificacion_Oportunidad TIMESTAMP,
+    importe_matricula double,
+    importe_descuento_matricula double,
+    importe_neto_matricula double,
+    kpi_new_enrollent BIGINT,
+    kpi_lead_neto BIGINT,
+    kpi_lead_bruto BIGINT,
+    activo BIGINT,
+    id_classlife STRING,
+    id_tipo_registro BIGINT,
+    tipo_registro string,
+    id_dim_propietario_lead BIGINT,
     id_dim_programa BIGINT,
     id_dim_producto BIGINT,
     id_dim_utm_campaign BIGINT,
@@ -975,15 +989,14 @@ CREATE TABLE IF NOT EXISTS gold_lakehouse.fctventa
     id_dim_nacionalidad BIGINT,
     id_dim_tipo_formacion BIGINT,
     id_dim_tipo_negocio BIGINT,
-    nombre_scoring string,
-    puntos_scoring double,
-    dias_cierre int,
-    fecAnulacion TIMESTAMP,
+    id_dim_modalidad BIGINT,
+    id_dim_institucion BIGINT,
+    id_dim_sede BIGINT,
+    id_dim_pais INT,
+    id_dim_estado_venta BIGINT,
+    id_dim_etapa_venta BIGINT,
     id_dim_motivo_perdida BIGINT,
-    kpi_new_enrollent BIGINT,
-    kpi_lead_neto BIGINT,
-    kpi_lead_bruto BIGINT,
-    activo BIGINT,
+    id_dim_vertical BIGINT,
     ETLcreatedDate TIMESTAMP,
     ETLupdatedDate TIMESTAMP
 )
@@ -992,3 +1005,111 @@ LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/fct
 """
 
 spark.sql(sql_query)
+
+# COMMAND ----------
+
+# DBTITLE 1,origenClasslife
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.origenClasslife 
+(
+    id_Dim_Origen_SIS BIGINT PRIMARY KEY,
+    nombre_Origen_SIS STRING NOT NULL,
+    api_Client INT NOT NULL,
+    codigo_Origen_SIS STRING NOT NULL,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP 
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/origenClasslife';
+"""
+
+spark.sql(sql_query)
+
+# COMMAND ----------
+
+# DBTITLE 1,dim_estado_matricula
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_estado_matricula 
+(
+    id_dim_estado_matricula BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1) PRIMARY KEY,
+    cod_estado_matricula STRING NOT NULL,
+    estado_matricula STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_estado_matricula';
+"""
+
+spark.sql(sql_query)
+
+# COMMAND ----------
+
+# DBTITLE 1,dim_estudiante
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_estudiante 
+(
+    id_dim_estudiante BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1) PRIMARY KEY,
+    id_origen_sis BIGINT NOT NULL,
+    cod_estudiante STRING NOT NULL,
+    nombre_estudiante STRING,
+    email STRING,
+    phone STRING,
+    fecha_creacion TIMESTAMP,
+    estado STRING,
+    edad STRING,
+    id_zoho STRING,
+    pais STRING,
+    ciudad STRING,
+    codigo_postal STRING,
+    direccion_postal STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_estudiante';
+"""
+
+spark.sql(sql_query)
+
+# COMMAND ----------
+
+# DBTITLE 1,fct_matricula
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.fct_matricula
+(
+    id_matricula BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 0 INCREMENT BY 1),
+    id_origen_SIS BIGINT,
+    cod_matricula STRING,
+    id_dim_estudiante BIGINT,
+    id_dim_programa BIGINT,
+    id_dim_modalidad BIGINT,
+    id_dim_institucion BIGINT,
+    id_dim_sede BIGINT,
+    id_dim_producto BIGINT,
+    id_dim_tipo_formacion BIGINT,
+    id_dim_tipo_negocio BIGINT,
+    id_dim_pais BIGINT,
+    ano_curso INT,
+    fec_matricula DATE,
+    id_dim_estado_matricula BIGINT,
+    fec_anulacion TIMESTAMP,
+    fec_finalizacion TIMESTAMP,
+    nota_media BIGINT,
+    cod_descuento STRING,
+    importe_matricula DECIMAL(10,2),
+    importe_descuento DECIMAL(10,2),
+    importe_cobros DECIMAL(10,2),
+    tipo_pago STRING,
+    edad_acceso STRING,
+    zoho_deal_id STRING,
+    fec_ultimo_login_LMS TIMESTAMP,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/fct_matricula';
+"""
+
+spark.sql(sql_query)
+

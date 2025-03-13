@@ -94,7 +94,8 @@ columns_mapping = {
     "data_nacionalidad1": "nacionalidad1",
     "data_id_unico": "id_unico",
     "data_tipolog_a_del_alumno1": "Tipologia_alumno1",
-    "data_contact_name_id": "Contact_Name_id"
+    "data_contact_name_id": "Contact_Name_id",
+    "data_l_nea_de_negocio": "linea_de_negocio"
 }
 
 # Filtrar solo las columnas que existen en el DataFrame antes de renombrarlas
@@ -109,11 +110,6 @@ zohodeals_df = zohodeals_df.select([col(new_col) for new_col in columns_mapping.
 
 # Mostrar el DataFrame resultante
 display(zohodeals_df)
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC **Gestion amount_user**
 
 # COMMAND ----------
 
@@ -175,6 +171,7 @@ zohodeals_df = zohodeals_df \
     .withColumn("id_unico", col("id_unico")) \
     .withColumn("Contact_Name_id", col("Contact_Name_id").cast(StringType())) \
     .withColumn("Tipologia_alumno1", col("Tipologia_alumno1").cast(StringType())) \
+    .withColumn("linea_de_negocio", col("linea_de_negocio").cast(StringType())) \
     .withColumn("processdate", current_timestamp()) \
     .withColumn("sourcesystem", lit("zoho_Deals")) 
 
@@ -211,6 +208,20 @@ zohodeals_df = zohodeals_df.dropDuplicates()
 # COMMAND ----------
 
 zohodeals_df.createOrReplaceTempView("zohodeals_source_view")
+
+zohodeals_df_filtered = zohodeals_df.filter(
+    (col("linea_de_negocio").isin("FisioFocus")) &  # Solo esos valores
+    (col("linea_de_negocio").isNotNull()) &  # Que no sea NULL
+    (col("linea_de_negocio") != "")  # Que no sea blanco
+)
+
+# Crear la vista temporal con datos ya filtrados
+zohodeals_df_filtered.createOrReplaceTempView("zohodeals_source_view")
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from zohodeals_source_view;
 
 # COMMAND ----------
 

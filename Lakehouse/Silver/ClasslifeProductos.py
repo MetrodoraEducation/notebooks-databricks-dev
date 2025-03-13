@@ -222,12 +222,6 @@ classlifetitulaciones_df = classlifetitulaciones_df.select(
     *[col(c).alias(c.strip().replace("`", "")) for c in columnas_seleccionadas]
 )
 
-## 📌 Verificar si `tarifa_matricula` ahora está accesible
-#if "tarifa_matricula" in classlifetitulaciones_df.columns:
-#    print("✅ `tarifa_matricula` ahora está disponible correctamente.")
-#else:
-#    print("❌ ERROR: `tarifa_matricula` sigue sin encontrarse en el DataFrame.")
-
 # 📌 Mostrar los primeros registros
 display(classlifetitulaciones_df)
 
@@ -310,7 +304,7 @@ classlifetitulaciones_df = classlifetitulaciones_df \
     .withColumn("descripcion_calendario", col("descripcion_calendario").cast(StringType())) \
     .withColumn("nombre_antiguo_de_programa", col("nombre_antiguo_de_programa").cast(StringType())) \
     .withColumn("nombre_del_programa_oficial_completo", col("nombre_del_programa_oficial_completo").cast(StringType())) \
-    .withColumn("nombreweb", col("nombreweb").cast(StringType())) 
+    .withColumn("nombreweb", col("nombreweb").cast(StringType()))
 
 # 📌 Mostrar los primeros registros
 display(classlifetitulaciones_df)

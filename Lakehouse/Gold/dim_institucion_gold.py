@@ -41,7 +41,7 @@
 # MAGIC CREATE OR REPLACE TEMPORARY VIEW entidad_legal_view AS
 # MAGIC SELECT DISTINCT
 # MAGIC                CASE 
-# MAGIC                     WHEN entidadlegal IS NOT NULL AND entidadlegal != '' THEN TRIM(UPPER(entidadlegal))
+# MAGIC                     WHEN entidad_legal IS NOT NULL AND entidad_legal != '' THEN TRIM(UPPER(entidad_legal))
 # MAGIC                     ELSE 'n/a'
 # MAGIC                     END nombre_institucion
 # MAGIC FROM gold_lakehouse.dim_producto;
@@ -58,8 +58,3 @@
 # MAGIC WHEN NOT MATCHED THEN
 # MAGIC   INSERT (nombre_institucion, ETLcreatedDate, ETLupdatedDate)
 # MAGIC   VALUES (source.nombre_institucion, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select * from gold_lakehouse.dim_institucion

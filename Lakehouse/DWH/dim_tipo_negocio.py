@@ -22,7 +22,9 @@ def upsert_dim_tipo_negocio(partition):
         INSERT INTO dim_tipo_negocio (
             id_dim_tipo_negocio,
             tipo_negocio_desc,
-            cod_tipo_negocio
+            cod_tipo_negocio,
+            ETLcreatedDate,
+            ETLupdatedDate
         )
         VALUES %s
         ON CONFLICT (id_dim_tipo_negocio) DO UPDATE SET
@@ -34,7 +36,9 @@ def upsert_dim_tipo_negocio(partition):
         values = [(
             row["id_dim_tipo_negocio"],
             row["tipo_negocio_desc"],
-            row["cod_tipo_negocio"]
+            row["cod_tipo_negocio"],
+            row["ETLcreatedDate"],
+            row["ETLupdatedDate"]
         ) for row in partition]
 
         if values:
@@ -53,7 +57,7 @@ def upsert_dim_tipo_negocio(partition):
 
 # Leer datos desde la tabla `gold_lakehouse.dim_tipo_negocio` en Databricks
 source_table = (spark.table("gold_lakehouse.dim_tipo_negocio")
-                .select("id_dim_tipo_negocio", "tipo_negocio_desc", "cod_tipo_negocio"))
+                .select("id_dim_tipo_negocio", "tipo_negocio_desc", "cod_tipo_negocio", "ETLcreatedDate", "ETLupdatedDate"))
 
 # Aplicar la función a las particiones de datos
 try:

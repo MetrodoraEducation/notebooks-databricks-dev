@@ -7,11 +7,9 @@
 # MAGIC %sql
 # MAGIC CREATE OR REPLACE TEMPORARY VIEW dim_entidad_legal_view AS
 # MAGIC SELECT DISTINCT
-# MAGIC     TRIM(institucion) AS nombreInstitucion
+# MAGIC     TRIM(institucion) AS nombre_Institucion
 # MAGIC FROM silver_lakehouse.sales
 # MAGIC WHERE institucion IS NOT NULL AND institucion <> '';
-# MAGIC
-# MAGIC select * from dim_entidad_legal_view;
 
 # COMMAND ----------
 
@@ -19,24 +17,24 @@
 # MAGIC -- 1️⃣ 🔹 Asegurar que el registro `idDimEntidadLegal = -1` existe con valores `n/a`
 # MAGIC MERGE INTO gold_lakehouse.dim_entidad_legal AS target
 # MAGIC USING (
-# MAGIC     SELECT 'n/a' AS nombreInstitucion, 'n/a' AS codigoEntidadLegal
+# MAGIC     SELECT 'n/a' AS nombre_Institucion, 'n/a' AS codigo_Entidad_Legal
 # MAGIC ) AS source
-# MAGIC ON target.nombreInstitucion = 'n/a'
+# MAGIC ON target.nombre_Institucion = 'n/a'
 # MAGIC WHEN NOT MATCHED THEN 
-# MAGIC     INSERT (nombreInstitucion, codigoEntidadLegal, ETLcreatedDate, ETLupdatedDate)
+# MAGIC     INSERT (nombre_Institucion, codigo_Entidad_Legal, ETLcreatedDate, ETLupdatedDate)
 # MAGIC     VALUES ('n/a', 'n/a', current_timestamp(), current_timestamp());
 # MAGIC
 # MAGIC -- 2️⃣ 🔹 MERGE para insertar o actualizar entidades legales, excluyendo `n/a`
 # MAGIC MERGE INTO gold_lakehouse.dim_entidad_legal AS target
 # MAGIC USING (
 # MAGIC     SELECT DISTINCT 
-# MAGIC         TRIM(institucion) AS nombreInstitucion,
+# MAGIC         TRIM(institucion) AS nombre_Institucion,
 # MAGIC         CASE 
 # MAGIC             WHEN TRIM(institucion) = 'CESIF' THEN 'CF'
 # MAGIC             WHEN TRIM(institucion) = 'ISEP' THEN 'IP'
 # MAGIC             -- Agregar más reglas aquí si se identifican más códigos
 # MAGIC             ELSE NULL 
-# MAGIC         END AS codigoEntidadLegal,
+# MAGIC         END AS codigo_Entidad_Legal,
 # MAGIC         current_timestamp() AS ETLcreatedDate,
 # MAGIC         current_timestamp() AS ETLupdatedDate
 # MAGIC     FROM silver_lakehouse.sales
@@ -44,24 +42,24 @@
 # MAGIC       AND institucion <> '' 
 # MAGIC       AND institucion <> 'n/a' -- Evitar modificar el registro especial
 # MAGIC ) AS source
-# MAGIC ON target.nombreInstitucion = source.nombreInstitucion
+# MAGIC ON target.nombre_Institucion = source.nombre_Institucion
 # MAGIC
 # MAGIC WHEN MATCHED THEN 
 # MAGIC     UPDATE SET 
-# MAGIC         target.codigoEntidadLegal = source.codigoEntidadLegal,
+# MAGIC         target.codigo_Entidad_Legal = source.codigo_Entidad_Legal,
 # MAGIC         target.ETLupdatedDate = current_timestamp()
 # MAGIC
 # MAGIC WHEN NOT MATCHED THEN 
-# MAGIC     INSERT (nombreInstitucion, codigoEntidadLegal, ETLcreatedDate, ETLupdatedDate)
-# MAGIC     VALUES (source.nombreInstitucion, source.codigoEntidadLegal, source.ETLcreatedDate, source.ETLupdatedDate);
+# MAGIC     INSERT (nombre_Institucion, codigo_Entidad_Legal, ETLcreatedDate, ETLupdatedDate)
+# MAGIC     VALUES (source.nombre_Institucion, source.codigo_Entidad_Legal, source.ETLcreatedDate, source.ETLupdatedDate);
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC INSERT INTO gold_lakehouse.dim_entidad_legal (nombreInstitucion, codigoEntidadLegal, ETLcreatedDate, ETLupdatedDate)
+# MAGIC INSERT INTO gold_lakehouse.dim_entidad_legal (nombre_Institucion, codigo_Entidad_Legal, ETLcreatedDate, ETLupdatedDate)
 # MAGIC SELECT 
-# MAGIC     t.nombreInstitucion, 
-# MAGIC     t.codigoEntidadLegal, 
+# MAGIC     t.nombre_Institucion, 
+# MAGIC     t.codigo_Entidad_Legal, 
 # MAGIC     current_timestamp(), 
 # MAGIC     current_timestamp()
 # MAGIC FROM (
@@ -89,10 +87,10 @@
 # MAGIC         ('METRODORAFP SANTANDER', 'ST'),
 # MAGIC         ('METRODORAFP VALLADOLID', 'VL'),
 # MAGIC         ('METRODORAFP MADRID-RIO', 'RI')
-# MAGIC ) AS t(nombreInstitucion, codigoEntidadLegal)
+# MAGIC ) AS t(nombre_Institucion, codigo_Entidad_Legal)
 # MAGIC WHERE NOT EXISTS (
 # MAGIC     SELECT 1 FROM gold_lakehouse.dim_entidad_legal target 
-# MAGIC     WHERE target.codigoEntidadLegal = t.codigoEntidadLegal
+# MAGIC     WHERE target.codigo_Entidad_Legal = t.codigo_Entidad_Legal
 # MAGIC );
 
 # COMMAND ----------
@@ -100,22 +98,20 @@
 # MAGIC %sql
 # MAGIC CREATE OR REPLACE TEMPORARY VIEW entidad_legal_view AS
 # MAGIC SELECT DISTINCT 
-# MAGIC     TRIM(entidadLegal) AS nombreInstitucion
+# MAGIC     TRIM(entidad_Legal) AS nombre_Institucion
 # MAGIC FROM gold_lakehouse.dim_producto
-# MAGIC WHERE entidadLegal IS NOT NULL AND entidadLegal <> ''
-# MAGIC AND entidadLegal NOT IN (SELECT nombreInstitucion FROM gold_lakehouse.dim_entidad_legal);
-# MAGIC
-# MAGIC select * from entidad_legal_view;
+# MAGIC WHERE entidad_Legal IS NOT NULL AND entidad_Legal <> ''
+# MAGIC AND entidad_Legal NOT IN (SELECT nombre_Institucion FROM gold_lakehouse.dim_entidad_legal);
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC MERGE INTO gold_lakehouse.dim_entidad_legal AS target
 # MAGIC USING (
-# MAGIC     SELECT nombreInstitucion, UPPER(SUBSTRING(nombreInstitucion, 1, 2)) AS codigoEntidadLegal
+# MAGIC     SELECT nombre_Institucion, UPPER(SUBSTRING(nombre_Institucion, 1, 2)) AS codigo_Entidad_Legal
 # MAGIC     FROM entidad_legal_view
 # MAGIC ) AS source
-# MAGIC ON target.nombreInstitucion = source.nombreInstitucion
+# MAGIC ON target.nombre_Institucion = source.nombre_Institucion
 # MAGIC WHEN NOT MATCHED THEN 
-# MAGIC     INSERT (nombreInstitucion, codigoEntidadLegal, ETLcreatedDate, ETLupdatedDate)
-# MAGIC     VALUES (source.nombreInstitucion, source.codigoEntidadLegal, current_timestamp(), current_timestamp());
+# MAGIC     INSERT (nombre_Institucion, codigo_Entidad_Legal, ETLcreatedDate, ETLupdatedDate)
+# MAGIC     VALUES (source.nombre_Institucion, source.codigo_Entidad_Legal, current_timestamp(), current_timestamp());

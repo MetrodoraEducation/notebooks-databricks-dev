@@ -53,10 +53,9 @@
 # MAGIC                         COALESCE(leads.lead_correlation_id, deals.lead_correlation_id) AS lead_Correlation,
 # MAGIC                         leads.Created_Time AS fecha_Creacion_Lead, --leads.Created_Time
 # MAGIC                         leads.Modified_Time AS fecha_Modificacion_Lead,
-# MAGIC                         CASE 
-# MAGIC                             WHEN deals.fecha_hora_anulacion IS NOT NULL THEN 'ANULADA'
-# MAGIC                             WHEN deals.etapa LIKE '%Matriculado%' THEN 'CERRADA'
-# MAGIC                         ELSE 'ABIERTA'
+# MAGIC                         CASE WHEN deals.etapa = 'Perdido' THEN 'PERDIDA'
+# MAGIC                             WHEN deals.etapa = 'Matriculado' OR deals.etapa = 'NEC' THEN 'GANADA'
+# MAGIC                             ELSE 'ABIERTA'
 # MAGIC                         END AS nombre_estado_venta,
 # MAGIC                         deals.id AS cod_Oportunidad,
 # MAGIC                         deals.ID_Classlife AS cod_Classlife,
@@ -77,6 +76,7 @@
 # MAGIC                         deals.Created_Time AS fecha_Creacion_Oportunidad, --deals.Created_Time
 # MAGIC                         deals.Modified_Time AS fecha_Modificacion_Oportunidad,
 # MAGIC                         deals.fecha_hora_anulacion as fecha_hora_Anulacion,
+# MAGIC                         deals.id_classlife as id_classlife,
 # MAGIC                         CASE 
 # MAGIC                             WHEN leads.id IS NOT NULL AND deals.id_lead IS NULL THEN leads.processdate
 # MAGIC                             WHEN leads.id IS NOT NULL AND deals.id_lead IS NOT NULL THEN COALESCE(deals.processdate, leads.processdate)
@@ -171,7 +171,7 @@
 # MAGIC         lead_Correlation, fecha_Creacion_Lead, fecha_Modificacion_Lead, nombre_estado_venta, 
 # MAGIC         fecha_Cierre, cod_Unico_Zoho, ratio_Moneda, moneda, importe_Pagado, 
 # MAGIC         cod_Descuento, pct_Descuento, importe, tipo_Alumno, 
-# MAGIC         tipo_Conversion_opotunidad, tipo_Cliente_oportunidad, fecha_hora_Pagado, fecha_Creacion_Oportunidad, 
+# MAGIC         tipo_Conversion_opotunidad, tipo_Cliente_oportunidad, id_classlife, fecha_hora_Pagado, fecha_Creacion_Oportunidad, 
 # MAGIC         fecha_Modificacion_Oportunidad, fecha_hora_anulacion, processdate, sourcesystem
 # MAGIC     ) 
 # MAGIC     VALUES (
@@ -185,7 +185,7 @@
 # MAGIC         source.lead_Correlation, source.fecha_Creacion_Lead, source.fecha_Modificacion_Lead, source.nombre_estado_venta, 
 # MAGIC         source.fecha_Cierre, source.cod_Unico_Zoho, source.ratio_Moneda, source.moneda, source.importe_Pagado, 
 # MAGIC         source.cod_Descuento, source.pct_Descuento, source.importe, source.tipo_Alumno, source.tipo_Conversion_opotunidad, 
-# MAGIC         source.tipo_Cliente_oportunidad, source.fecha_hora_Pagado, source.fecha_Creacion_Oportunidad, source.fecha_Modificacion_Oportunidad, 
+# MAGIC         source.tipo_Cliente_oportunidad, source.id_classlife ,source.fecha_hora_Pagado, source.fecha_Creacion_Oportunidad, source.fecha_Modificacion_Oportunidad, 
 # MAGIC         source.fecha_hora_anulacion, source.processdate, source.sourcesystem
 # MAGIC     );
 

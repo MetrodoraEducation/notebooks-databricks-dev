@@ -18,6 +18,7 @@
 # MAGIC         dayofyear(date) AS dia_anio, -- Día del año
 # MAGIC         weekofyear(date) AS semana_anio, -- Número de la semana en el año
 # MAGIC         day(last_day(date)) AS numero_dias_mes, -- Total de días en el mes
+# MAGIC         day(date) AS dia_mes, -- 📌 Día del mes agregado
 # MAGIC         trunc(date, 'month') AS primer_dia_mes, -- Primer día del mes
 # MAGIC         last_day(date) AS ultimo_dia_mes, -- Último día del mes
 # MAGIC         year(date) AS anio_numero, -- Año (e.g., 2023)
@@ -33,10 +34,23 @@
 # MAGIC             WHEN month(date) IN (3, 4, 5) THEN 'Q3' -- Q3: Mar-May
 # MAGIC             ELSE 'Q4' -- Q4: Jun-Ago
 # MAGIC         END AS trimestre_nombre, -- Nombre del trimestre fiscal (Q1, Q2, Q3, Q4)
-# MAGIC         (month(date) + CASE WHEN month(date) >= 9 THEN -8 ELSE 4 END) AS mes_fiscal_numero, -- Mes fiscal ajustado
-# MAGIC         (year(date) + CASE WHEN month(date) >= 9 THEN 1 ELSE 0 END) AS anio_fiscal_numero, -- Año fiscal ajustado
-# MAGIC         concat(year(date), '/', year(date) + 1) AS curso_academico, -- Año académico (e.g., 2023/2024)
-# MAGIC         CASE WHEN dayofweek(date) IN (1, 7) THEN FALSE ELSE TRUE END AS es_laborable, -- TRUE si es laborable, FALSE si no
+# MAGIC         (month(date) + CASE WHEN month(date) >= 9 THEN -8 ELSE 4 END) AS mes_fiscal_numero -- Mes fiscal numero
+# MAGIC         ,CASE 
+# MAGIC                 WHEN month(date) >= 9 THEN year(date)  -- Septiembre a diciembre: el año fiscal es el mismo
+# MAGIC                 ELSE year(date) - 1  -- Enero a agosto: el año fiscal es el anterior
+# MAGIC          END AS anio_fiscal_numero -- Año fiscal
+# MAGIC         ,CONCAT(
+# MAGIC                 CASE 
+# MAGIC                     WHEN month(date) >= 9 THEN year(date)  
+# MAGIC                     ELSE year(date) - 1
+# MAGIC                 END, 
+# MAGIC                 '/', 
+# MAGIC                 CASE 
+# MAGIC                     WHEN month(date) >= 9 THEN year(date) + 1  
+# MAGIC                     ELSE year(date)
+# MAGIC                 END
+# MAGIC         ) AS curso_academico -- Curso academico
+# MAGIC         ,CASE WHEN dayofweek(date) IN (1, 7) THEN FALSE ELSE TRUE END AS es_laborable, -- TRUE si es laborable, FALSE si no
 # MAGIC         CASE WHEN dayofweek(date) IN (1, 7) THEN TRUE ELSE FALSE END AS es_finde_semana -- TRUE si es fin de semana
 # MAGIC     FROM date_series
 # MAGIC     LATERAL VIEW explode(dates) exploded AS date
@@ -59,6 +73,7 @@
 # MAGIC     dia_anio,
 # MAGIC     semana_anio,
 # MAGIC     numero_dias_mes,
+# MAGIC     dia_mes, -- 📌 Se agrega a la inserción
 # MAGIC     primer_dia_mes,
 # MAGIC     ultimo_dia_mes,
 # MAGIC     anio_numero,
@@ -82,6 +97,7 @@
 # MAGIC     source.dia_anio,
 # MAGIC     source.semana_anio,
 # MAGIC     source.numero_dias_mes,
+# MAGIC     source.dia_mes, -- 📌 Se inserta en la tabla
 # MAGIC     source.primer_dia_mes,
 # MAGIC     source.ultimo_dia_mes,
 # MAGIC     source.anio_numero,
@@ -93,6 +109,7 @@
 # MAGIC     source.es_laborable,
 # MAGIC     source.es_finde_semana
 # MAGIC );
+# MAGIC
 
 # COMMAND ----------
 

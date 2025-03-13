@@ -40,148 +40,68 @@ for col in zohousers_df.columns:
 
 # COMMAND ----------
 
+from pyspark.sql.functions import col, to_date, to_timestamp, lit, current_timestamp
 from pyspark.sql.types import StringType, BooleanType, LongType
-from pyspark.sql.functions import col, lit, current_timestamp
 
-# Diccionario para mapear las columnas directamente, manteniendo los nombres originales
-columns_mapping = {
-    "current_shift": "current_shift",
-    "next_shift": "next_shift",
-    "shift_effective_from": "shift_effective_from",
-    "currency": "currency",
-    "isonline": "isonline",
-    "modified_time": "modified_time",
-    "alias": "alias",
-    "city": "city",
-    "confirm": "confirm",
-    "country": "country",
-    "country_locale": "country_locale",
-    "created_time": "created_time",
-    "date_format": "date_format",
-    "decimal_separator": "decimal_separator",
-    "default_tab_group": "default_tab_group",
-    "dob": "dob",
-    "email": "email",
-    "fax": "fax",
-    "first_name": "first_name",
-    "full_name": "full_name",
-    "id": "id",
-    "language": "language",
-    "last_name": "last_name",
-    "locale": "locale",
-    "microsoft": "microsoft",
-    "mobile": "mobile",
-    "name_format__s": "name_format",
-    "number_separator": "number_separator",
-    "offset": "offset",
-    "personal_account": "personal_account",
-    "phone": "phone",
-    "sandboxdeveloper": "sandboxdeveloper",
-    "signature": "signature",
-    "sort_order_preference__s": "sort_order_preference",
-    "state": "state",
-    "status": "status",
-    "status_reason__s": "status_reason",
-    "street": "street",
-    "time_format": "time_format",
-    "time_zone": "time_zone",
-    "type__s": "type",
-    "website": "website",
-    "zip": "zip",
-    "zuid": "zuid",
-    "modified_by_id": "modified_by_id",
-    "modified_by_name": "modified_by_name",
-    "created_by_id": "created_by_id",
-    "created_by_name": "created_by_name",
-    "profile_id": "profile_id",
-    "profile_name": "profile_name",
-    "role_id": "role_id",
-    "role_name": "role_name",
-}
+# 📌 Lista de columnas con sus tipos de datos correspondientes
+columnas_con_tipo = [
+    ("processdate", current_timestamp()),
+    ("sourcesystem", lit("zoho_Users")),
+    ("next_shift", col("next_shift").cast(StringType())),
+    ("shift_effective_from", to_timestamp(col("shift_effective_from"), "yyyy-MM-dd'T'HH:mm:ssXXX")),
+    ("currency", col("currency").cast(StringType())),
+    ("isonline", col("isonline").cast(BooleanType())),
+    ("modified_time", to_timestamp(col("modified_time"), "yyyy-MM-dd'T'HH:mm:ssXXX")),
+    ("alias", col("alias").cast(StringType())),
+    ("city", col("city").cast(StringType())),
+    ("confirm", col("confirm").cast(BooleanType())),
+    ("country", col("country").cast(StringType())),
+    ("country_locale", col("country_locale").cast(StringType())),
+    ("created_time", to_timestamp(col("created_time"), "yyyy-MM-dd'T'HH:mm:ssXXX")),
+    ("date_format", col("date_format").cast(StringType())),
+    ("decimal_separator", col("decimal_separator").cast(StringType())),
+    ("default_tab_group", col("default_tab_group").cast(StringType())),
+    ("dob", to_date(col("dob"), "yyyy-MM-dd")),
+    ("email", col("email").cast(StringType())),
+    ("fax", col("fax").cast(StringType())),
+    ("first_name", col("first_name").cast(StringType())),
+    ("full_name", col("full_name").cast(StringType())),
+    ("id", col("id").cast(StringType())),
+    ("language", col("language").cast(StringType())),
+    ("last_name", col("last_name").cast(StringType())),
+    ("locale", col("locale").cast(StringType())),
+    ("microsoft", col("microsoft").cast(BooleanType())),
+    ("mobile", col("mobile").cast(StringType())),
+    ("number_separator", col("number_separator").cast(StringType())),
+    ("offset", col("offset").cast(LongType())),
+    ("personal_account", col("personal_account").cast(BooleanType())),
+    ("phone", col("phone").cast(StringType())),
+    ("sandboxdeveloper", col("sandboxdeveloper").cast(BooleanType())),
+    ("signature", col("signature").cast(StringType())),
+    ("state", col("state").cast(StringType())),
+    ("status", col("status").cast(StringType())),
+    ("street", col("street").cast(StringType())),
+    ("time_format", col("time_format").cast(StringType())),
+    ("time_zone", col("time_zone").cast(StringType())),
+    ("website", col("website").cast(StringType())),
+    ("zip", col("zip").cast(StringType())),
+    ("zuid", col("zuid").cast(StringType())),
+    ("modified_by_id", col("modified_by_id").cast(StringType())),
+    ("modified_by_name", col("modified_by_name").cast(StringType())),
+    ("created_by_id", col("created_by_id").cast(StringType())),
+    ("created_by_name", col("created_by_name").cast(StringType())),
+    ("profile_id", col("profile_id").cast(StringType())),
+    ("profile_name", col("profile_name").cast(StringType())),
+    ("role_id", col("role_id").cast(StringType())),
+    ("role_name", col("role_name").cast(StringType())),
+]
 
-# Renombrar columnas dinámicamente
-for old_col, new_col in columns_mapping.items():
-    if old_col in zohousers_df.columns:
-        zohousers_df = zohousers_df.withColumnRenamed(old_col, new_col)
+# 📌 Aplicar transformaciones y seleccionar solo las columnas especificadas
+zohousers_df = zohousers_df.select(
+    [expr.alias(nombre) for nombre, expr in columnas_con_tipo]
+)
 
-# Seleccionar solo las columnas necesarias después de renombrarlas
-selected_columns = list(columns_mapping.values())
-
-# Filtrar el DataFrame solo con las columnas deseadas
-zohousers_df = zohousers_df.select(*selected_columns)
-
-# Agregar columnas adicionales (si es necesario)
-zohousers_df = zohousers_df \
-    .withColumn("processdate", current_timestamp()) \
-    .withColumn("sourcesystem", lit("zoho_Users"))
-
-# Mostrar el DataFrame resultante
-display(zohousers_df)
-
-
-# COMMAND ----------
-
-from pyspark.sql.types import *
-from pyspark.sql.functions import *
-
-# Ajuste del DataFrame con validación de columnas para zohousers
-zohousers_df = zohousers_df \
-    .withColumn("processdate", current_timestamp()) \
-    .withColumn("sourcesystem", lit("zoho_Users")) \
-    .withColumn("current_shift", col("current_shift").cast(StringType())) \
-    .withColumn("next_shift", col("next_shift").cast(StringType())) \
-    .withColumn("shift_effective_from", to_timestamp(col("shift_effective_from"), "yyyy-MM-dd'T'HH:mm:ssXXX")) \
-    .withColumn("currency", col("currency").cast(StringType())) \
-    .withColumn("isonline", col("isonline").cast(BooleanType())) \
-    .withColumn("modified_time", to_timestamp(col("modified_time"), "yyyy-MM-dd'T'HH:mm:ssXXX")) \
-    .withColumn("alias", col("alias").cast(StringType())) \
-    .withColumn("city", col("city").cast(StringType())) \
-    .withColumn("confirm", col("confirm").cast(BooleanType())) \
-    .withColumn("country", col("country").cast(StringType())) \
-    .withColumn("country_locale", col("country_locale").cast(StringType())) \
-    .withColumn("created_time", to_timestamp(col("created_time"), "yyyy-MM-dd'T'HH:mm:ssXXX")) \
-    .withColumn("date_format", col("date_format").cast(StringType())) \
-    .withColumn("decimal_separator", col("decimal_separator").cast(StringType())) \
-    .withColumn("default_tab_group", col("default_tab_group").cast(StringType())) \
-    .withColumn("dob", to_date(col("dob"), "yyyy-MM-dd")) \
-    .withColumn("email", col("email").cast(StringType())) \
-    .withColumn("fax", col("fax").cast(StringType())) \
-    .withColumn("first_name", col("first_name").cast(StringType())) \
-    .withColumn("full_name", col("full_name").cast(StringType())) \
-    .withColumn("id", col("id").cast(StringType())) \
-    .withColumn("language", col("language").cast(StringType())) \
-    .withColumn("last_name", col("last_name").cast(StringType())) \
-    .withColumn("locale", col("locale").cast(StringType())) \
-    .withColumn("microsoft", col("microsoft").cast(BooleanType())) \
-    .withColumn("mobile", col("mobile").cast(StringType())) \
-    .withColumn("name_format", col("name_format").cast(StringType())) \
-    .withColumn("number_separator", col("number_separator").cast(StringType())) \
-    .withColumn("offset", col("offset").cast(LongType())) \
-    .withColumn("personal_account", col("personal_account").cast(BooleanType())) \
-    .withColumn("phone", col("phone").cast(StringType())) \
-    .withColumn("sandboxdeveloper", col("sandboxdeveloper").cast(BooleanType())) \
-    .withColumn("signature", col("signature").cast(StringType())) \
-    .withColumn("sort_order_preference", col("sort_order_preference").cast(StringType())) \
-    .withColumn("state", col("state").cast(StringType())) \
-    .withColumn("status", col("status").cast(StringType())) \
-    .withColumn("status_reason", col("status_reason").cast(StringType())) \
-    .withColumn("street", col("street").cast(StringType())) \
-    .withColumn("time_format", col("time_format").cast(StringType())) \
-    .withColumn("time_zone", col("time_zone").cast(StringType())) \
-    .withColumn("type", col("type").cast(StringType())) \
-    .withColumn("website", col("website").cast(StringType())) \
-    .withColumn("zip", col("zip").cast(StringType())) \
-    .withColumn("zuid", col("zuid").cast(StringType())) \
-    .withColumn("modified_by_id", col("modified_by_id").cast(StringType())) \
-    .withColumn("modified_by_name", col("modified_by_name").cast(StringType())) \
-    .withColumn("created_by_id", col("created_by_id").cast(StringType())) \
-    .withColumn("created_by_name", col("created_by_name").cast(StringType())) \
-    .withColumn("profile_id", col("profile_id").cast(StringType())) \
-    .withColumn("profile_name", col("profile_name").cast(StringType())) \
-    .withColumn("role_id", col("role_id").cast(StringType())) \
-    .withColumn("role_name", col("role_name").cast(StringType()))
-
-# Mostrar el DataFrame final
+# 📌 Mostrar el DataFrame final
 display(zohousers_df)
 
 # COMMAND ----------

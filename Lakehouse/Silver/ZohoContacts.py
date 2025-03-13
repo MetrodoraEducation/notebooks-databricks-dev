@@ -122,11 +122,11 @@ zohocontacts_df = zohocontacts_df \
     .withColumn("tipo_contacto", col("tipo_contacto").cast(StringType())) \
     .withColumn("id", col("id").cast(StringType())) \
     .withColumn("recibir_comunicacion", col("recibir_comunicacion").cast(StringType())) \
+    .withColumn("ultima_linea_de_negocio", col("ltima_l_nea_de_negocio").cast(StringType())).drop("ltima_l_nea_de_negocio") \
     .withColumn("woztellplatform_whatsapp_out", col("woztellplatform_whatsapp_out").cast(BooleanType()))
 
 # Mostrar el DataFrame final
 display(zohocontacts_df)
-
 
 # COMMAND ----------
 
@@ -159,6 +159,20 @@ zohocontacts_df = zohocontacts_df.dropDuplicates()
 # COMMAND ----------
 
 zohocontacts_df.createOrReplaceTempView("zohocontacts_source_view")
+
+zohocontacts_df_filtered = zohocontacts_df.filter(
+    (col("ultima_linea_de_negocio").isin("FisioFocus")) &  # Solo esos valores
+    (col("ultima_linea_de_negocio").isNotNull()) &  # Que no sea NULL
+    (col("ultima_linea_de_negocio") != "")  # Que no sea blanco
+)
+
+# Crear la vista temporal con datos ya filtrados
+zohocontacts_df_filtered.createOrReplaceTempView("zohocontacts_source_view")
+
+# COMMAND ----------
+
+# MAGIC %sql
+# MAGIC select * from zohocontacts_source_view
 
 # COMMAND ----------
 

@@ -47,6 +47,7 @@ def insert_new_records(partition, db_password):
             dia_anio,
             semana_anio,
             numero_dias_mes,
+            dia_mes,
             primer_dia_mes,
             ultimo_dia_mes,
             anio_numero,
@@ -75,6 +76,7 @@ def insert_new_records(partition, db_password):
             row["dia_anio"],
             row["semana_anio"],
             row["numero_dias_mes"],
+            row["dia_mes"],
             row["primer_dia_mes"],
             row["ultimo_dia_mes"],
             row["anio_numero"],
@@ -105,7 +107,7 @@ def insert_new_records(partition, db_password):
 source_table = (spark.table("gold_lakehouse.dim_fecha")
                 .select("id_dim_fecha", "fecha_larga", "dia_semana", "dia_semana_corto",
                         "dia_semana_numero", "mes_numero", "mes_corto", "mes_largo",
-                        "dia_anio", "semana_anio", "numero_dias_mes", "primer_dia_mes",
+                        "dia_anio", "semana_anio", "numero_dias_mes", "dia_mes", "primer_dia_mes",
                         "ultimo_dia_mes", "anio_numero", "trimestre_numero", "trimestre_nombre",
                         "mes_fiscal_numero", "anio_fiscal_numero", "curso_academico",
                         "es_laborable", "es_finde_semana"))

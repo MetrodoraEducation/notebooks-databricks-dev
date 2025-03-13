@@ -5,6 +5,7 @@
 # COMMAND ----------
 
 # DBTITLE 1,Insert fct_budget lakehouse postgresql
+from pyspark.sql.functions import col
 from psycopg2.extras import execute_values
 
 # Función para insertar o actualizar registros en `fct_budget`

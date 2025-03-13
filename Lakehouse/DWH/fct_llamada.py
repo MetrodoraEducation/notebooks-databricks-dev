@@ -5,6 +5,7 @@
 # COMMAND ----------
 
 # DBTITLE 1,Insert fct_llamada lakehouse postgresql
+from pyspark.sql.functions import col
 from psycopg2.extras import execute_values
 
 # Función para insertar o actualizar registros
@@ -74,6 +75,7 @@ def upsert_records(partition):
 
 # Leer datos desde la tabla `gold_lakehouse.fct_llamada` en Databricks
 source_table = (spark.table("gold_lakehouse.fct_llamada")
+                .filter(col("cod_llamada") != -1)
                 .select("cod_llamada", "id_dim_tiempo", "id_dim_hora", "direccion_llamada",
                         "duration", "numero_telefono", "id_dim_pais", "id_dim_comercial",
                         "id_dim_motivo_perdida_llamada", "processdate"))

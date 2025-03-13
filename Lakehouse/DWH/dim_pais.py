@@ -23,6 +23,7 @@ def upsert_dim_pais(partition):
             id,
             nombre,
             name,
+            nombre_nacionalidad,
             iso2,
             iso3
         )
@@ -30,6 +31,7 @@ def upsert_dim_pais(partition):
         ON CONFLICT (id) DO UPDATE SET
             nombre = EXCLUDED.nombre,
             name = EXCLUDED.name,
+            nombre_nacionalidad = EXCLUDED.nombre_nacionalidad,
             iso2 = EXCLUDED.iso2,
             iso3 = EXCLUDED.iso3;
         """
@@ -39,6 +41,7 @@ def upsert_dim_pais(partition):
             row["id"],
             row["nombre"],
             row["name"],
+            row["nombre_nacionalidad"],
             row["iso2"],
             row["iso3"]
         ) for row in partition]
@@ -59,7 +62,7 @@ def upsert_dim_pais(partition):
 
 # Leer datos desde la tabla `gold_lakehouse.dim_pais` en Databricks
 source_table = (spark.table("gold_lakehouse.dim_pais")
-                .select("id", "nombre", "name", "iso2", "iso3"))
+                .select("id", "nombre", "name", "nombre_nacionalidad", "iso2", "iso3"))
 
 # Aplicar la función a las particiones de datos
 try:

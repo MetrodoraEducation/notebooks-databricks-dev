@@ -102,11 +102,6 @@ display(zoholeads_df)
 
 # COMMAND ----------
 
-# MAGIC %md
-# MAGIC **Gestion amount_user**
-
-# COMMAND ----------
-
 # DBTITLE 1,Display dataframe
 display(zoholeads_df)
 
@@ -161,6 +156,7 @@ zoholeads_df = zoholeads_df \
     .withColumn("source", col("source").cast(StringType())) \
     .withColumn("owner_email", col("owner_email").cast(StringType())) \
     .withColumn("owner_id", col("owner_id").cast(StringType())) \
+    .withColumn("linea_de_negocio", col("data_l_nea_de_negocio").cast(StringType())).drop("data_l_nea_de_negocio") \
     .withColumn("owner_name", col("owner_name").cast(StringType())) 
 
 # Display final DataFrame
@@ -192,7 +188,15 @@ zoholeads_df = zoholeads_df.dropDuplicates()
 
 # COMMAND ----------
 
-zoholeads_df.createOrReplaceTempView("zoholeads_source_view")
+# DBTITLE 1,Filter FisioFocus, CESIF, ISEP
+zoholeads_df_filtered = zoholeads_df.filter(
+    (col("linea_de_negocio").isin("FisioFocus", "CESIF", "ISEP")) &  # Solo esos valores
+    (col("linea_de_negocio").isNotNull()) &  # Que no sea NULL
+    (col("linea_de_negocio") != "")  # Que no sea blanco
+)
+
+# Crear la vista temporal con datos ya filtrados
+zoholeads_df_filtered.createOrReplaceTempView("zoholeads_source_view")
 
 # COMMAND ----------
 

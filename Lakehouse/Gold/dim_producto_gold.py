@@ -18,28 +18,22 @@
 # MAGIC %sql
 # MAGIC CREATE OR REPLACE TEMPORARY VIEW dim_producto_view AS
 # MAGIC SELECT DISTINCT
-# MAGIC     enroll_group_id AS codProductoOrigen,
-# MAGIC     enroll_alias AS codProductoCorto,
-# MAGIC     enroll_group_name AS codProducto,
-# MAGIC     school_name AS origenProducto,
-# MAGIC     degree_title AS tipoProducto,
+# MAGIC     enroll_group_id AS cod_Producto_Origen,
+# MAGIC     enroll_alias AS cod_Producto_Corto,
+# MAGIC     enroll_group_name AS cod_Producto,
+# MAGIC     school_name AS origen_Producto,
+# MAGIC     degree_title AS tipo_Producto,
 # MAGIC     area_title AS area,
-# MAGIC     nombre_del_programa_oficial_completo AS nombreOficial,
+# MAGIC     nombre_del_programa_oficial_completo AS nombre_Oficial,
 # MAGIC     ciclo_title AS curso,
-# MAGIC     -- Manejo de valores vacíos en INT
 # MAGIC     CASE 
 # MAGIC         WHEN TRIM(year) = '' THEN NULL
 # MAGIC         ELSE TRY_CAST(year AS INT) 
-# MAGIC     END AS numeroCurso,
-# MAGIC     -- Manejo de valores inválidos en fechas
-# MAGIC     CASE 
-# MAGIC         WHEN fecha_inicio IN ('', '00/00/0000', '0000-00-00') THEN NULL 
-# MAGIC         ELSE TRY_CAST(fecha_inicio AS DATE) 
-# MAGIC     END AS fechaInicioCurso,
-# MAGIC     CASE 
-# MAGIC         WHEN fecha_fin IN ('', '00/00/0000', '0000-00-00') THEN NULL 
-# MAGIC         ELSE TRY_CAST(fecha_fin AS DATE) 
-# MAGIC     END AS fechaFinCurso,
+# MAGIC     END AS numero_Curso,
+# MAGIC     fecha_inicio_docencia AS fecha_Inicio_Curso,
+# MAGIC     fecha_fin_docencia AS fecha_Fin_Curso,
+# MAGIC     fecha_inicio_reconocimiento_ingresos AS fecha_inicio_reconocimiento,
+# MAGIC     fecha_fin_reconocimiento_ingresos AS fecha_fin_reconocimiento,
 # MAGIC     CASE 
 # MAGIC         WHEN TRIM(ciclo_id) = '' THEN NULL
 # MAGIC         ELSE TRY_CAST(ciclo_id AS INT) 
@@ -47,99 +41,90 @@
 # MAGIC     CASE 
 # MAGIC         WHEN TRIM(plazas) = '' THEN 0
 # MAGIC         ELSE TRY_CAST(plazas AS INT) 
-# MAGIC     END AS numPlazas,
+# MAGIC     END AS num_Plazas,
 # MAGIC     CASE 
 # MAGIC         WHEN TRIM(grupo) = '' THEN 0
 # MAGIC         ELSE TRY_CAST(grupo AS INT) 
-# MAGIC     END AS numGrupo,
+# MAGIC     END AS num_Grupo,
 # MAGIC     vertical,
-# MAGIC     codigo_vertical AS codVertical,
+# MAGIC     codigo_vertical AS cod_Vertical,
 # MAGIC     especialidad,
-# MAGIC     codigo_especialidad AS codEspecialidad,
+# MAGIC     codigo_especialidad AS cod_Especialidad,
 # MAGIC     CASE 
 # MAGIC         WHEN TRIM(creditos) = '' THEN 0
 # MAGIC         ELSE TRY_CAST(creditos AS DOUBLE) 
-# MAGIC     END AS numCreditos,
-# MAGIC     UPPER(codigo_programa) AS codPrograma,
-# MAGIC     admisionsino AS admiteAdmision,
-# MAGIC     tiponegocio AS tipoNegocio,
+# MAGIC     END AS num_Creditos,
+# MAGIC     UPPER(codigo_programa) AS cod_Programa,
+# MAGIC     admisionsino AS admite_Admision,
+# MAGIC     tiponegocio AS tipo_Negocio,
 # MAGIC     acreditado,
-# MAGIC     nombreweb AS nombreWeb,
-# MAGIC     entidad_legal AS entidadLegal,
-# MAGIC     codigo_entidad_legal AS codEntidadLegal,
-# MAGIC     modalidad,
-# MAGIC     modalidad_code AS codModalidad,
-# MAGIC     -- Fechas con manejo de valores vacíos
+# MAGIC     nombreweb AS nombre_Web,
+# MAGIC     entidad_legal AS entidad_Legal,
+# MAGIC     codigo_entidad_legal AS cod_Entidad_Legal,
+# MAGIC     section_title AS modalidad,
+# MAGIC     modalidad_code AS cod_Modalidad,
+# MAGIC     TRY_CAST(codigo_sede AS FLOAT) AS codigo_sede,
+# MAGIC     TRIM(UPPER(sede)) AS sede,
+# MAGIC     --section_title AS section_title,
 # MAGIC     CASE 
 # MAGIC         WHEN fecha_inicio IN ('', '00/00/0000', '0000-00-00') THEN NULL 
 # MAGIC         ELSE TRY_CAST(fecha_inicio AS DATE) 
-# MAGIC     END AS fechaInicio,
+# MAGIC     END AS fecha_Inicio,
 # MAGIC     CASE 
 # MAGIC         WHEN fecha_fin IN ('', '00/00/0000', '0000-00-00') THEN NULL 
 # MAGIC         ELSE TRY_CAST(fecha_fin AS DATE) 
-# MAGIC     END AS fechaFin,
+# MAGIC     END AS fecha_Fin,
 # MAGIC     CASE 
 # MAGIC         WHEN TRIM(meses_duracion) = '' THEN 0
 # MAGIC         ELSE TRY_CAST(meses_duracion AS INT) 
-# MAGIC     END AS mesesDuracion,
+# MAGIC     END AS meses_Duracion,
 # MAGIC     CASE 
 # MAGIC         WHEN TRIM(horas_acreditadas) = '' THEN 0
 # MAGIC         ELSE TRY_CAST(horas_acreditadas AS INT) 
-# MAGIC     END AS horasAcreditadas,
-# MAGIC
+# MAGIC     END AS horas_Acreditadas,
 # MAGIC     CASE 
 # MAGIC         WHEN TRIM(horas_presenciales) = '' THEN 0
 # MAGIC         ELSE TRY_CAST(horas_presenciales AS INT) 
-# MAGIC     END AS horasPresenciales,
-# MAGIC
+# MAGIC     END AS horas_Presenciales,
 # MAGIC     CASE 
 # MAGIC         WHEN fecha_inicio_pago IN ('', '00/00/0000', '0000-00-00') THEN NULL 
 # MAGIC         ELSE TRY_CAST(fecha_inicio_pago AS DATE) 
-# MAGIC     END AS fechaInicioPago,
-# MAGIC
+# MAGIC     END AS fecha_Inicio_Pago,
 # MAGIC     CASE 
 # MAGIC         WHEN fecha_fin_pago IN ('', '00/00/0000', '0000-00-00') THEN NULL 
 # MAGIC         ELSE TRY_CAST(fecha_fin_pago AS DATE) 
-# MAGIC     END AS fechaFinPago,
-# MAGIC
+# MAGIC     END AS fecha_Fin_Pago,
 # MAGIC     CASE 
 # MAGIC         WHEN TRIM(cuotas_docencia) = '' THEN 0
 # MAGIC         ELSE TRY_CAST(cuotas_docencia AS INT) 
-# MAGIC     END AS numCuotas,
-# MAGIC
-# MAGIC     -- Valores numéricos con manejo de NULLs
+# MAGIC     END AS num_Cuotas,
 # MAGIC     CASE 
 # MAGIC         WHEN TRIM(tarifa_euneiz) = '' THEN 0.0
 # MAGIC         ELSE TRY_CAST(tarifa_euneiz AS DOUBLE) 
-# MAGIC     END AS importeCertificado,
-# MAGIC
+# MAGIC     END AS importe_Certificado,
 # MAGIC     CASE 
 # MAGIC         WHEN TRIM(tarifa_ampliacion) = '' THEN 0.0
 # MAGIC         ELSE TRY_CAST(tarifa_ampliacion AS DOUBLE) 
-# MAGIC     END AS importeAmpliacion,
+# MAGIC     END AS importe_Ampliacion,
 # MAGIC
 # MAGIC     CASE 
 # MAGIC         WHEN TRIM(tarifa_docencia) = '' THEN 0.0
 # MAGIC         ELSE TRY_CAST(tarifa_docencia AS DOUBLE) 
-# MAGIC     END AS importeDocencia,
+# MAGIC     END AS importe_Docencia,
 # MAGIC
 # MAGIC     CASE 
 # MAGIC         WHEN TRIM(tarifa_matricula) = '' THEN 0.0
 # MAGIC         ELSE TRY_CAST(tarifa_matricula AS DOUBLE) 
-# MAGIC     END AS importeMatricula,
-# MAGIC
-# MAGIC     -- Cálculo total con manejo de NULLs
+# MAGIC     END AS importe_Matricula,
 # MAGIC     COALESCE(
 # MAGIC         TRY_CAST(tarifa_docencia AS DOUBLE), 0.0
 # MAGIC     ) + COALESCE(
 # MAGIC         TRY_CAST(tarifa_matricula AS DOUBLE), 0.0
-# MAGIC     ) AS importeTotal,
-# MAGIC
+# MAGIC     ) AS importe_Total,
 # MAGIC     CASE 
 # MAGIC         WHEN fecha_creacion IN ('', '00/00/0000', '0000-00-00') THEN NULL 
 # MAGIC         ELSE TRY_CAST(fecha_creacion AS TIMESTAMP) 
 # MAGIC     END AS ETLcreatedDate,
-# MAGIC
 # MAGIC     CASE 
 # MAGIC         WHEN ultima_actualizacion IN ('', '00/00/0000', '0000-00-00') THEN NULL 
 # MAGIC         ELSE TRY_CAST(ultima_actualizacion AS TIMESTAMP) 
@@ -148,8 +133,7 @@
 # MAGIC     current_timestamp() AS updated_at
 # MAGIC FROM silver_lakehouse.classlifetitulaciones;
 # MAGIC
-# MAGIC select * from dim_producto_view
-# MAGIC
+# MAGIC select * from dim_producto_view;
 
 # COMMAND ----------
 
@@ -158,97 +142,91 @@
 # MAGIC MERGE INTO gold_lakehouse.dim_producto AS target
 # MAGIC USING (
 # MAGIC     SELECT 
-# MAGIC         '-1' AS codProductoOrigen, 'n/a' AS codProductoCorto, 'n/a' AS codProducto, 'n/a' AS origenProducto,
-# MAGIC         'n/a' AS tipoProducto, 'n/a' AS area, 'n/a' AS nombreOficial, 'n/a' AS curso, 0 AS numeroCurso,
-# MAGIC         '1900-01-01' AS fechaInicioCurso, '1900-01-01' AS fechaFinCurso, 0 AS ciclo_id, 0 AS numPlazas,
-# MAGIC         0 AS numGrupo, 'n/a' AS vertical, 'n/a' AS codVertical, 'n/a' AS especialidad, 'n/a' AS codEspecialidad,
-# MAGIC         0.0 AS numCreditos, 'n/a' AS codPrograma, 'n/a' AS admiteAdmision, 'n/a' AS tipoNegocio, 'n/a' AS acreditado,
-# MAGIC         'n/a' AS nombreWeb, 'n/a' AS entidadLegal, 'n/a' AS codEntidadLegal, 'n/a' AS modalidad, 'n/a' AS codModalidad,
-# MAGIC         '1900-01-01' AS fechaInicio, '1900-01-01' AS fechaFin, 0 AS mesesDuracion, 0 AS horasAcreditadas, 0 AS horasPresenciales,
-# MAGIC         '1900-01-01' AS fechaInicioPago, '1900-01-01' AS fechaFinPago, 0 AS numCuotas, 0.0 AS importeCertificado,
-# MAGIC         0.0 AS importeAmpliacion, 0.0 AS importeDocencia, 0.0 AS importeMatricula, 0.0 AS importeTotal,
+# MAGIC         '-1' AS cod_Producto_Origen, 'n/a' AS cod_Producto_Corto, 'n/a' AS cod_Producto, 'n/a' AS origen_Producto,
+# MAGIC         'n/a' AS tipo_Producto, 'n/a' AS area, 'n/a' AS nombre_Oficial, 'n/a' AS curso, 0 AS numero_Curso, 0 AS codigo_sede, 'n/a' AS sede,
+# MAGIC         '1900-01-01' AS fecha_Inicio_Curso, '1900-01-01' AS fecha_Fin_Curso,'1900-01-01' AS fecha_inicio_reconocimiento, '1900-01-01' AS fecha_fin_reconocimiento, 0 AS ciclo_id, 0 AS num_Plazas,
+# MAGIC         0 AS num_Grupo, 'n/a' AS vertical, 'n/a' AS cod_Vertical, 'n/a' AS especialidad, 'n/a' AS cod_Especialidad,
+# MAGIC         0.0 AS num_Creditos, 'n/a' AS cod_Programa, 'n/a' AS admite_Admision, 'n/a' AS tipo_Negocio, 'n/a' AS acreditado,
+# MAGIC         'n/a' AS nombre_Web, 'n/a' AS entidad_Legal, 'n/a' AS cod_Entidad_Legal, 'n/a' AS modalidad, 'n/a' AS cod_Modalidad,
+# MAGIC         '1900-01-01' AS fecha_Inicio, '1900-01-01' AS fecha_Fin, 0 AS meses_Duracion, 0 AS horas_Acreditadas, 0 AS horas_Presenciales,
+# MAGIC         '1900-01-01' AS fecha_Inicio_Pago, '1900-01-01' AS fecha_Fin_Pago, 0 AS num_Cuotas, 0.0 AS importe_Certificado,
+# MAGIC         0.0 AS importe_Ampliacion, 0.0 AS importe_Docencia, 0.0 AS importe_Matricula, 0.0 AS importe_Total,
 # MAGIC         CURRENT_TIMESTAMP AS ETLupdatedDate, CURRENT_TIMESTAMP AS ETLcreatedDate
 # MAGIC ) AS source
-# MAGIC ON target.idDimProducto = -1
+# MAGIC ON target.id_Dim_Producto = -1
 # MAGIC WHEN NOT MATCHED THEN 
 # MAGIC     INSERT (
-# MAGIC         codProductoOrigen, codProductoCorto, codProducto, origenProducto, tipoProducto, area, nombreOficial, curso, numeroCurso, 
-# MAGIC         fechaInicioCurso, fechaFinCurso, ciclo_id, numPlazas, numGrupo, vertical, codVertical, especialidad, codEspecialidad, numCreditos, 
-# MAGIC         codPrograma, admiteAdmision, tipoNegocio, acreditado, nombreWeb, entidadLegal, codEntidadLegal, modalidad, codModalidad, fechaInicio, 
-# MAGIC         fechaFin, mesesDuracion, horasAcreditadas, horasPresenciales, fechaInicioPago, fechaFinPago, numCuotas, importeCertificado, 
-# MAGIC         importeAmpliacion, importeDocencia, importeMatricula, importeTotal, ETLcreatedDate, ETLupdatedDate
+# MAGIC         cod_Producto_Origen, cod_Producto_Corto, cod_Producto, origen_Producto, tipo_Producto, area, nombre_Oficial, curso, numero_Curso, codigo_sede, sede,
+# MAGIC         fecha_Inicio_Curso, fecha_Fin_Curso, fecha_inicio_reconocimiento,fecha_fin_reconocimiento, ciclo_id, num_Plazas, num_Grupo, vertical, cod_Vertical, especialidad, cod_Especialidad, num_Creditos, 
+# MAGIC         cod_Programa, admite_Admision, tipo_Negocio, acreditado, nombre_Web, entidad_Legal, cod_Entidad_Legal, modalidad, cod_Modalidad, fecha_Inicio, 
+# MAGIC         fecha_Fin, meses_Duracion, horas_Acreditadas, horas_Presenciales, fecha_Inicio_Pago, fecha_Fin_Pago, num_Cuotas, importe_Certificado, 
+# MAGIC         importe_Ampliacion, importe_Docencia, importe_Matricula, importe_Total, ETLcreatedDate, ETLupdatedDate
 # MAGIC     ) VALUES (
-# MAGIC         source.codProductoOrigen, source.codProductoCorto, source.codProducto, source.origenProducto, source.tipoProducto, source.area, 
-# MAGIC         source.nombreOficial, source.curso, source.numeroCurso, source.fechaInicioCurso, source.fechaFinCurso, source.ciclo_id, source.numPlazas, 
-# MAGIC         source.numGrupo, source.vertical, source.codVertical, source.especialidad, source.codEspecialidad, source.numCreditos, source.codPrograma, 
-# MAGIC         source.admiteAdmision, source.tipoNegocio, source.acreditado, source.nombreWeb, source.entidadLegal, source.codEntidadLegal, source.modalidad, 
-# MAGIC         source.codModalidad, source.fechaInicio, source.fechaFin, source.mesesDuracion, source.horasAcreditadas, source.horasPresenciales, 
-# MAGIC         source.fechaInicioPago, source.fechaFinPago, source.numCuotas, source.importeCertificado, source.importeAmpliacion, source.importeDocencia, 
-# MAGIC         source.importeMatricula, source.importeTotal, source.ETLcreatedDate, source.ETLupdatedDate
+# MAGIC         source.cod_Producto_Origen, source.cod_Producto_Corto, source.cod_Producto, source.origen_Producto, source.tipo_Producto, source.area, 
+# MAGIC         source.nombre_Oficial, source.curso, source.numero_Curso, source.codigo_sede, source.sede, source.fecha_Inicio_Curso, source.fecha_Fin_Curso, source.fecha_inicio_reconocimiento, source.fecha_fin_reconocimiento, source.ciclo_id, source.num_Plazas, 
+# MAGIC         source.num_Grupo, source.vertical, source.cod_Vertical, source.especialidad, source.cod_Especialidad, source.num_Creditos, source.cod_Programa, 
+# MAGIC         source.admite_Admision, source.tipo_Negocio, source.acreditado, source.nombre_Web, source.entidad_Legal, source.cod_Entidad_Legal, source.modalidad, 
+# MAGIC         source.cod_Modalidad, source.fecha_Inicio, source.fecha_Fin, source.meses_Duracion, source.horas_Acreditadas, source.horas_Presenciales, 
+# MAGIC         source.fecha_Inicio_Pago, source.fecha_Fin_Pago, source.num_Cuotas, source.importe_Certificado, source.importe_Ampliacion, source.importe_Docencia, 
+# MAGIC         source.importe_Matricula, source.importe_Total, source.ETLcreatedDate, source.ETLupdatedDate
 # MAGIC     );
 # MAGIC
 # MAGIC -- 2️⃣ MERGE principal para `dim_producto`, evitando modificar el registro `-1`
 # MAGIC MERGE INTO gold_lakehouse.dim_producto AS target
 # MAGIC USING (
 # MAGIC     SELECT DISTINCT * FROM dim_producto_view 
-# MAGIC     WHERE codProductoOrigen <> '-1'
+# MAGIC     WHERE cod_Producto_Origen <> '-1'
 # MAGIC ) AS source
-# MAGIC ON UPPER(TRIM(target.codProductoOrigen)) = UPPER(TRIM(source.codProductoOrigen)) 
-# MAGIC    AND UPPER(TRIM(target.codProducto)) = UPPER(TRIM(source.codProducto))
-# MAGIC    AND target.idDimProducto != -1  -- 🔹 Evitar modificar el registro `-1`
+# MAGIC ON UPPER(TRIM(target.cod_Producto_Origen)) = UPPER(TRIM(source.cod_Producto_Origen)) 
+# MAGIC    AND UPPER(TRIM(target.cod_Producto)) = UPPER(TRIM(source.cod_Producto))
+# MAGIC    AND target.id_Dim_Producto != -1  -- 🔹 Evitar modificar el registro `-1`
 # MAGIC
 # MAGIC WHEN MATCHED AND (
-# MAGIC     COALESCE(TRIM(UPPER(target.nombreOficial)), '') <> COALESCE(TRIM(UPPER(source.nombreOficial)), '') OR
-# MAGIC     COALESCE(TRIM(UPPER(target.tipoProducto)), '') <> COALESCE(TRIM(UPPER(source.tipoProducto)), '') OR
+# MAGIC     COALESCE(TRIM(UPPER(target.nombre_Oficial)), '') <> COALESCE(TRIM(UPPER(source.nombre_Oficial)), '') OR
+# MAGIC     COALESCE(TRIM(UPPER(target.tipo_Producto)), '') <> COALESCE(TRIM(UPPER(source.tipo_Producto)), '') OR
 # MAGIC     COALESCE(TRIM(UPPER(target.area)), '') <> COALESCE(TRIM(UPPER(source.area)), '') OR
 # MAGIC     COALESCE(TRIM(UPPER(target.curso)), '') <> COALESCE(TRIM(UPPER(source.curso)), '') OR
 # MAGIC     COALESCE(TRIM(UPPER(target.vertical)), '') <> COALESCE(TRIM(UPPER(source.vertical)), '') OR
-# MAGIC     COALESCE(TRIM(UPPER(target.codVertical)), '') <> COALESCE(TRIM(UPPER(source.codVertical)), '') OR
+# MAGIC     COALESCE(TRIM(UPPER(target.cod_Vertical)), '') <> COALESCE(TRIM(UPPER(source.cod_Vertical)), '') OR
 # MAGIC     COALESCE(TRIM(UPPER(target.modalidad)), '') <> COALESCE(TRIM(UPPER(source.modalidad)), '') OR
-# MAGIC     COALESCE(TRIM(UPPER(target.codModalidad)), '') <> COALESCE(TRIM(UPPER(source.codModalidad)), '') OR
-# MAGIC     COALESCE(TRIM(UPPER(target.nombreWeb)), '') <> COALESCE(TRIM(UPPER(source.nombreWeb)), '') OR
+# MAGIC     COALESCE(TRIM(UPPER(target.cod_Modalidad)), '') <> COALESCE(TRIM(UPPER(source.cod_Modalidad)), '') OR
+# MAGIC     COALESCE(TRIM(UPPER(target.nombre_Web)), '') <> COALESCE(TRIM(UPPER(source.nombre_Web)), '') OR
 # MAGIC     target.ETLupdatedDate < source.ETLupdatedDate
 # MAGIC )
 # MAGIC THEN UPDATE SET
-# MAGIC     target.nombreOficial = source.nombreOficial,
-# MAGIC     target.tipoProducto = source.tipoProducto,
+# MAGIC     target.nombre_Oficial = source.nombre_Oficial,
+# MAGIC     target.tipo_Producto = source.tipo_Producto,
 # MAGIC     target.area = source.area,
 # MAGIC     target.curso = source.curso,
 # MAGIC     target.vertical = source.vertical,
-# MAGIC     target.codVertical = source.codVertical,
+# MAGIC     target.cod_Vertical = source.cod_Vertical,
 # MAGIC     target.modalidad = source.modalidad,
-# MAGIC     target.codModalidad = source.codModalidad,
-# MAGIC     target.nombreWeb = source.nombreWeb,
+# MAGIC     target.cod_Modalidad = source.cod_Modalidad,
+# MAGIC     target.nombre_Web = source.nombre_Web,
 # MAGIC     target.ETLupdatedDate = current_timestamp()
 # MAGIC
 # MAGIC WHEN NOT MATCHED THEN
 # MAGIC     INSERT (
-# MAGIC         codProductoOrigen, codProductoCorto, codProducto, origenProducto, tipoProducto, area, nombreOficial, curso, numeroCurso, 
-# MAGIC         fechaInicioCurso, fechaFinCurso, ciclo_id, numPlazas, numGrupo, vertical, codVertical, especialidad, codEspecialidad, numCreditos, 
-# MAGIC         codPrograma, admiteAdmision, tipoNegocio, acreditado, nombreWeb, entidadLegal, codEntidadLegal, modalidad, codModalidad, fechaInicio, 
-# MAGIC         fechaFin, mesesDuracion, horasAcreditadas, horasPresenciales, fechaInicioPago, fechaFinPago, numCuotas, importeCertificado, 
-# MAGIC         importeAmpliacion, importeDocencia, importeMatricula, importeTotal, ETLcreatedDate, ETLupdatedDate
+# MAGIC         cod_Producto_Origen, cod_Producto_Corto, cod_Producto, origen_Producto, tipo_Producto, area, nombre_Oficial, curso, numero_Curso, codigo_sede, sede,
+# MAGIC         fecha_Inicio_Curso, fecha_Fin_Curso, fecha_inicio_reconocimiento,fecha_fin_reconocimiento, ciclo_id, num_Plazas, num_Grupo, vertical, cod_Vertical, especialidad, cod_Especialidad, num_Creditos, 
+# MAGIC         cod_Programa, admite_Admision, tipo_Negocio, acreditado, nombre_Web, entidad_Legal, cod_Entidad_Legal, modalidad, cod_Modalidad, fecha_Inicio, 
+# MAGIC         fecha_Fin, meses_Duracion, horas_Acreditadas, horas_Presenciales, fecha_Inicio_Pago, fecha_Fin_Pago, num_Cuotas, importe_Certificado, 
+# MAGIC         importe_Ampliacion, importe_Docencia, importe_Matricula, importe_Total, ETLcreatedDate, ETLupdatedDate
 # MAGIC     ) VALUES (
-# MAGIC         source.codProductoOrigen, source.codProductoCorto, source.codProducto, source.origenProducto, source.tipoProducto, source.area, 
-# MAGIC         source.nombreOficial, source.curso, source.numeroCurso, source.fechaInicioCurso, source.fechaFinCurso, source.ciclo_id, source.numPlazas, 
-# MAGIC         source.numGrupo, source.vertical, source.codVertical, source.especialidad, source.codEspecialidad, source.numCreditos, source.codPrograma, 
-# MAGIC         source.admiteAdmision, source.tipoNegocio, source.acreditado, source.nombreWeb, source.entidadLegal, source.codEntidadLegal, source.modalidad, 
-# MAGIC         source.codModalidad, source.fechaInicio, source.fechaFin, source.mesesDuracion, source.horasAcreditadas, source.horasPresenciales, 
-# MAGIC         source.fechaInicioPago, source.fechaFinPago, source.numCuotas, source.importeCertificado, source.importeAmpliacion, source.importeDocencia, 
-# MAGIC         source.importeMatricula, source.importeTotal, source.ETLcreatedDate, source.ETLupdatedDate
+# MAGIC         source.cod_Producto_Origen, source.cod_Producto_Corto, source.cod_Producto, source.origen_Producto, source.tipo_Producto, source.area, 
+# MAGIC         source.nombre_Oficial, source.curso, source.numero_Curso, source.codigo_sede, source.sede, source.fecha_Inicio_Curso, source.fecha_Fin_Curso, source.fecha_inicio_reconocimiento, source.fecha_fin_reconocimiento, source.ciclo_id, source.num_Plazas, 
+# MAGIC         source.num_Grupo, source.vertical, source.cod_Vertical, source.especialidad, source.cod_Especialidad, source.num_Creditos, source.cod_Programa, 
+# MAGIC         source.admite_Admision, source.tipo_Negocio, source.acreditado, source.nombre_Web, source.entidad_Legal, source.cod_Entidad_Legal, source.modalidad, 
+# MAGIC         source.cod_Modalidad, source.fecha_Inicio, source.fecha_Fin, source.meses_Duracion, source.horas_Acreditadas, source.horas_Presenciales, 
+# MAGIC         source.fecha_Inicio_Pago, source.fecha_Fin_Pago, source.num_Cuotas, source.importe_Certificado, source.importe_Ampliacion, source.importe_Docencia, 
+# MAGIC         source.importe_Matricula, source.importe_Total, source.ETLcreatedDate, source.ETLupdatedDate
 # MAGIC     );
-# MAGIC
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC SELECT * FROM gold_lakehouse.dim_producto LIMIT 100;
 
 # COMMAND ----------
 
 # DBTITLE 1,Validate duplicates >1
 # MAGIC %sql
-# MAGIC SELECT codProductoorigen, COUNT(*) AS total_duplicados
+# MAGIC SELECT cod_Producto_origen, COUNT(*) AS total_duplicados
 # MAGIC FROM gold_lakehouse.dim_producto
-# MAGIC GROUP BY codProductoorigen
+# MAGIC GROUP BY cod_Producto_origen
 # MAGIC HAVING COUNT(*) > 1;

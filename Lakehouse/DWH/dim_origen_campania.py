@@ -24,14 +24,20 @@ def upsert_dim_origen_campania(partition):
             nombre_origen_campania,
             tipo_campania,
             canal_campania,
-            medio_campania
+            medio_campania,
+            fec_procesamiento,
+            ETLcreatedDate,
+            ETLupdatedDate
         )
         VALUES %s
         ON CONFLICT (id_dim_origen_campania) DO UPDATE SET
             nombre_origen_campania = EXCLUDED.nombre_origen_campania,
             tipo_campania = EXCLUDED.tipo_campania,
             canal_campania = EXCLUDED.canal_campania,
-            medio_campania = EXCLUDED.medio_campania;
+            medio_campania = EXCLUDED.medio_campania,
+            fec_procesamiento = EXCLUDED.fec_procesamiento,
+            ETLcreatedDate = EXCLUDED.ETLcreatedDate,
+            ETLupdatedDate = EXCLUDED.ETLupdatedDate;
         """
 
         # Transformar la partición de Spark en una lista de tuplas para insertar
@@ -40,7 +46,10 @@ def upsert_dim_origen_campania(partition):
             row["nombre_origen_campania"],
             row["tipo_campania"],
             row["canal_campania"],
-            row["medio_campania"]
+            row["medio_campania"],
+            row["fec_procesamiento"],
+            row["ETLcreatedDate"],
+            row["ETLupdatedDate"]
         ) for row in partition]
 
         if values:
@@ -60,7 +69,7 @@ def upsert_dim_origen_campania(partition):
 # Leer datos desde la tabla `gold_lakehouse.dim_origen_campania` en Databricks
 source_table = (spark.table("gold_lakehouse.dim_origen_campania")
                 .select("id_dim_origen_campania", "nombre_origen_campania", "tipo_campania",
-                        "canal_campania", "medio_campania"))
+                        "canal_campania", "medio_campania", "fec_procesamiento", "ETLcreatedDate", "ETLupdatedDate"))
 
 # Aplicar la función a las particiones de datos
 try:

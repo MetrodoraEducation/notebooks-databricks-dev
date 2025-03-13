@@ -113,7 +113,7 @@
 # MAGIC             COALESCE(o.id_dim_motivo_cierre, -1) as id_dim_motivo_cierre,
 # MAGIC             a.fec_procesamiento,
 # MAGIC             a.sistema_origen,
-# MAGIC             case when (a.tiempo_de_maduracion is null or a.tiempo_de_maduracion ='') then 0 else a.tiempo_de_maduracion end as tiempo_de_maduracion,
+# MAGIC             case when (a.tiempo_de_maduracion is null or a.tiempo_de_maduracion = '') then 0 else a.tiempo_de_maduracion end as tiempo_de_maduracion,
 # MAGIC             a.new_enrollent,
 # MAGIC             a.lead_neto,
 # MAGIC             a.activo

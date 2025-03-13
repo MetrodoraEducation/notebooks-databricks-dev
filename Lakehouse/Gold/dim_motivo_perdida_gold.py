@@ -7,7 +7,7 @@
 # MAGIC %sql
 # MAGIC CREATE OR REPLACE TEMPORARY VIEW dim_motivo_perdida_clientify_view AS
 # MAGIC SELECT DISTINCT
-# MAGIC     TRIM(lost_reason) AS nombreDimMotivoPerdida
+# MAGIC     TRIM(lost_reason) AS nombre_Dim_Motivo_Perdida
 # MAGIC     ,CASE 
 # MAGIC         WHEN lost_reason LIKE 'NV Bot' 
 # MAGIC             OR lost_reason LIKE 'NV Test' THEN 'INVÁLIDO'
@@ -45,24 +45,24 @@
 # MAGIC -- 1️⃣ 🔹 Asegurar que el registro `idDimMotivoPerdida = -1` existe con valores `n/a`
 # MAGIC MERGE INTO gold_lakehouse.dim_motivo_perdida AS target
 # MAGIC USING (
-# MAGIC     SELECT 'n/a' AS nombreDimMotivoPerdida
-# MAGIC           ,'n/a' AS cantidad
-# MAGIC           ,'n/a' AS calidad
+# MAGIC     SELECT 'n/a' AS nombre_Dim_Motivo_Perdida
+# MAGIC           ,'INVALIDO' AS cantidad
+# MAGIC           ,'INVALIDO' AS calidad
 # MAGIC           ,-1 AS esBruto
 # MAGIC           ,-1 AS esNeto
 # MAGIC           ,NULL AS ETLcreatedDate
 # MAGIC           ,NULL AS ETLupdatedDate
 # MAGIC ) AS source
-# MAGIC ON target.nombreDimMotivoPerdida = 'n/a'
+# MAGIC ON target.nombre_Dim_Motivo_Perdida = 'n/a'
 # MAGIC WHEN NOT MATCHED THEN 
-# MAGIC     INSERT (nombreDimMotivoPerdida, cantidad, calidad, esBruto, esNeto, ETLcreatedDate, ETLupdatedDate)
+# MAGIC     INSERT (nombre_Dim_Motivo_Perdida, cantidad, calidad, esBruto, esNeto, ETLcreatedDate, ETLupdatedDate)
 # MAGIC     VALUES ('n/a', 'n/a', 'n/a', -1, -1, current_timestamp(), current_timestamp());
 # MAGIC
 # MAGIC -- 2️⃣ 🔹 MERGE para insertar o actualizar `dim_motivo_perdida`, excluyendo `n/a`
 # MAGIC MERGE INTO gold_lakehouse.dim_motivo_perdida AS target
 # MAGIC USING (
 # MAGIC     SELECT DISTINCT 
-# MAGIC         TRIM(nombreDimMotivoPerdida) AS nombreDimMotivoPerdida,
+# MAGIC         TRIM(nombre_Dim_Motivo_Perdida) AS nombre_Dim_Motivo_Perdida,
 # MAGIC         cantidad,
 # MAGIC         calidad,
 # MAGIC         esBruto,
@@ -70,11 +70,11 @@
 # MAGIC         current_timestamp() AS ETLcreatedDate,
 # MAGIC         current_timestamp() AS ETLupdatedDate
 # MAGIC     FROM dim_motivo_perdida_clientify_view
-# MAGIC     WHERE nombreDimMotivoPerdida IS NOT NULL 
-# MAGIC       AND nombreDimMotivoPerdida <> '' 
-# MAGIC       AND nombreDimMotivoPerdida <> 'n/a'  -- Evitar modificar el registro especial
+# MAGIC     WHERE nombre_Dim_Motivo_Perdida IS NOT NULL 
+# MAGIC       AND nombre_Dim_Motivo_Perdida <> '' 
+# MAGIC       AND nombre_Dim_Motivo_Perdida <> 'n/a'  -- Evitar modificar el registro especial
 # MAGIC ) AS source
-# MAGIC ON target.nombreDimMotivoPerdida = source.nombreDimMotivoPerdida
+# MAGIC ON target.nombre_Dim_Motivo_Perdida = source.nombre_Dim_Motivo_Perdida
 # MAGIC
 # MAGIC WHEN MATCHED THEN 
 # MAGIC     UPDATE SET 
@@ -85,15 +85,15 @@
 # MAGIC         target.ETLupdatedDate = current_timestamp()
 # MAGIC
 # MAGIC WHEN NOT MATCHED THEN 
-# MAGIC     INSERT (nombreDimMotivoPerdida, cantidad, calidad, esBruto, esNeto ,ETLcreatedDate, ETLupdatedDate)
-# MAGIC     VALUES (source.nombreDimMotivoPerdida, source.cantidad, source.calidad, source.esBruto, source.esNeto ,source.ETLcreatedDate, source.ETLupdatedDate);
+# MAGIC     INSERT (nombre_Dim_Motivo_Perdida, cantidad, calidad, esBruto, esNeto ,ETLcreatedDate, ETLupdatedDate)
+# MAGIC     VALUES (source.nombre_Dim_Motivo_Perdida, source.cantidad, source.calidad, source.esBruto, source.esNeto ,source.ETLcreatedDate, source.ETLupdatedDate);
 
 # COMMAND ----------
 
 # MAGIC %sql
 # MAGIC CREATE OR REPLACE TEMPORARY VIEW dim_motivo_perdida_view AS
 # MAGIC     SELECT DISTINCT
-# MAGIC         COALESCE(zd.motivo_perdida_b2c, zd.motivo_perdida_b2b, zl.motivos_perdida) AS nombreDimMotivoPerdida
+# MAGIC         COALESCE(zd.motivo_perdida_b2c, zd.motivo_perdida_b2b, zl.motivos_perdida) AS nombre_Dim_Motivo_Perdida
 # MAGIC         ,CASE 
 # MAGIC               WHEN COALESCE(zd.motivo_perdida_b2c, zd.motivo_perdida_b2b, zl.motivos_perdida) LIKE 'NV Bot' 
 # MAGIC                 OR COALESCE(zd.motivo_perdida_b2c, zd.motivo_perdida_b2b, zl.motivos_perdida) LIKE 'NV Test' THEN 'INVÁLIDO'
@@ -134,7 +134,7 @@
 # MAGIC %sql
 # MAGIC MERGE INTO gold_lakehouse.dim_motivo_perdida AS target
 # MAGIC USING dim_motivo_perdida_view AS source
-# MAGIC ON target.nombreDimMotivoPerdida = source.nombreDimMotivoPerdida
+# MAGIC ON target.nombre_Dim_Motivo_Perdida = source.nombre_Dim_Motivo_Perdida
 # MAGIC WHEN MATCHED THEN 
 # MAGIC     UPDATE SET
 # MAGIC         target.cantidad = source.cantidad,
@@ -143,5 +143,5 @@
 # MAGIC         target.esNeto = source.esNeto,
 # MAGIC         target.ETLupdatedDate = CURRENT_TIMESTAMP
 # MAGIC WHEN NOT MATCHED THEN 
-# MAGIC     INSERT (nombreDimMotivoPerdida, cantidad, calidad, esBruto, esNeto,ETLcreatedDate, ETLupdatedDate)
-# MAGIC     VALUES (source.nombreDimMotivoPerdida, source.cantidad, source.calidad, source.esBruto, source.esNeto,source.ETLcreatedDate, source.ETLupdatedDate);
+# MAGIC     INSERT (nombre_Dim_Motivo_Perdida, cantidad, calidad, esBruto, esNeto,ETLcreatedDate, ETLupdatedDate)
+# MAGIC     VALUES (source.nombre_Dim_Motivo_Perdida, source.cantidad, source.calidad, source.esBruto, source.esNeto,source.ETLcreatedDate, source.ETLupdatedDate);

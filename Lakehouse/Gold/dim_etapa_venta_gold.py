@@ -42,14 +42,23 @@
 # MAGIC %sql
 # MAGIC MERGE INTO gold_lakehouse.dim_etapa_venta AS target
 # MAGIC USING (
+# MAGIC     -- Solo devuelve datos si el registro -1 no existe
 # MAGIC     SELECT 'n/a' AS nombre_etapa_venta
 # MAGIC           ,'n/a' AS nombreEtapaVentaAgrupado
 # MAGIC           ,-1 AS esNE
+# MAGIC     WHERE NOT EXISTS (
+# MAGIC         SELECT 1 
+# MAGIC         FROM gold_lakehouse.dim_etapa_venta 
+# MAGIC         WHERE id_dim_etapa_venta = -1 
+# MAGIC            OR orden_etapa = -1
+# MAGIC     )
 # MAGIC ) AS source
 # MAGIC ON target.id_dim_etapa_venta = -1
+# MAGIC OR target.orden_etapa = -1
 # MAGIC WHEN NOT MATCHED THEN 
-# MAGIC     INSERT (nombre_etapa_venta, nombreEtapaVentaAgrupado, esNE)
-# MAGIC     VALUES (source.nombre_etapa_venta, source.nombreEtapaVentaAgrupado, source.esNE);
+# MAGIC     INSERT (nombre_etapa_venta, nombreEtapaVentaAgrupado, esNE, ETLcreatedDate, ETLupdatedDate)
+# MAGIC     VALUES (source.nombre_etapa_venta, source.nombreEtapaVentaAgrupado, source.esNE, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+# MAGIC
 
 # COMMAND ----------
 

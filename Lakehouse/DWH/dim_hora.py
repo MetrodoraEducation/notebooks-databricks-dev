@@ -1,4 +1,8 @@
 # Databricks notebook source
+# MAGIC %run "../DWH/Configuration"
+
+# COMMAND ----------
+
 # DBTITLE 1,Insert dim_hora lakehouse postgresql
 import psycopg2
 from psycopg2.extras import execute_values

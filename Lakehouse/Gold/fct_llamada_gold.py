@@ -53,8 +53,17 @@ dim_motivo_perdida_llamada_df.createOrReplaceTempView("dim_motivo_perdida_llamad
 
 # DBTITLE 1,Merge into gold_lakehouse.fct_llamada
 # MAGIC %sql
+# MAGIC WITH deduplicated_source AS (
+# MAGIC   SELECT
+# MAGIC     *,
+# MAGIC     ROW_NUMBER() OVER (PARTITION BY cod_llamada ORDER BY fec_llamada DESC) AS row_num
+# MAGIC   FROM
+# MAGIC     fct_llamada_transformed
+# MAGIC )
 # MAGIC MERGE INTO gold_lakehouse.fct_llamada AS target
-# MAGIC USING fct_llamada_transformed AS source
+# MAGIC USING (
+# MAGIC   SELECT * FROM deduplicated_source WHERE row_num = 1
+# MAGIC ) AS source
 # MAGIC ON target.cod_llamada = source.cod_llamada
 # MAGIC WHEN MATCHED THEN 
 # MAGIC   UPDATE SET

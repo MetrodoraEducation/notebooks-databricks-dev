@@ -22,19 +22,20 @@ def upsert_dim_modalidad(partition):
         INSERT INTO dim_modalidad (
             id_dim_modalidad,
             nombre_modalidad,
-            codigo
+            ETLcreatedDate,
+            ETLupdatedDate
         )
         VALUES %s
         ON CONFLICT (id_dim_modalidad) DO UPDATE SET
-            nombre_modalidad = EXCLUDED.nombre_modalidad,
-            codigo = EXCLUDED.codigo;
+            nombre_modalidad = EXCLUDED.nombre_modalidad
         """
 
         # Transformar la partición de Spark en una lista de tuplas para insertar
         values = [(
             row["id_dim_modalidad"],
             row["nombre_modalidad"],
-            row["codigo"]
+            row["ETLcreatedDate"],
+            row["ETLupdatedDate"],
         ) for row in partition]
 
         if values:
@@ -53,7 +54,7 @@ def upsert_dim_modalidad(partition):
 
 # Leer datos desde la tabla `gold_lakehouse.dim_modalidad` en Databricks
 source_table = (spark.table("gold_lakehouse.dim_modalidad")
-                .select("id_dim_modalidad", "nombre_modalidad", "codigo"))
+                .select("id_dim_modalidad", "nombre_modalidad", "ETLcreatedDate", "ETLupdatedDate"))
 
 # Aplicar la función a las particiones de datos
 try:

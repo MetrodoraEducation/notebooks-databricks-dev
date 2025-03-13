@@ -5,6 +5,7 @@
 # COMMAND ----------
 
 # DBTITLE 1,Insert fct_venta lakehouse postgresql
+from pyspark.sql.functions import col
 from psycopg2.extras import execute_values
 
 # Función para insertar o actualizar registros en `fct_venta`
@@ -164,6 +165,7 @@ def upsert_fct_venta(partition):
 
 # Leer datos desde la tabla `gold_lakehouse.fct_venta` en Databricks
 source_table = (spark.table("gold_lakehouse.fct_venta")
+                .filter(col("id_venta") != -1)
                 .select("id_venta", "cod_venta", "nombre", "email", "telefono", "nombre_contacto",
                         "id_dim_propietario_lead", "id_dim_origen_campania", "id_dim_campania",
                         "importe_venta", "importe_descuento", "importe_venta_neta",

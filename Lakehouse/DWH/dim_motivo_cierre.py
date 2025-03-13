@@ -21,7 +21,9 @@ def upsert_dim_motivo_cierre(partition):
         query = """
         INSERT INTO dim_motivo_cierre (
             id_dim_motivo_cierre,
-            motivo_cierre
+            motivo_cierre,
+            ETLcreatedDate,
+            ETLupdatedDate
         )
         VALUES %s
         ON CONFLICT (id_dim_motivo_cierre) DO UPDATE SET
@@ -31,7 +33,9 @@ def upsert_dim_motivo_cierre(partition):
         # Transformar la partición de Spark en una lista de tuplas para insertar
         values = [(
             row["id_dim_motivo_cierre"],
-            row["motivo_cierre"]
+            row["motivo_cierre"],
+            row["ETLcreatedDate"],
+            row["ETLupdatedDate"]
         ) for row in partition]
 
         if values:
@@ -50,7 +54,7 @@ def upsert_dim_motivo_cierre(partition):
 
 # Leer datos desde la tabla `gold_lakehouse.dim_motivo_cierre` en Databricks
 source_table = (spark.table("gold_lakehouse.dim_motivo_cierre")
-                .select("id_dim_motivo_cierre", "motivo_cierre"))
+                .select("id_dim_motivo_cierre", "motivo_cierre", "ETLcreatedDate", "ETLupdatedDate"))
 
 # Aplicar la función a las particiones de datos
 try:
