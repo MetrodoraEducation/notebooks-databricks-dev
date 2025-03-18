@@ -1113,3 +1113,21 @@ LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/fct
 
 spark.sql(sql_query)
 
+
+# COMMAND ----------
+
+# DBTITLE 1,dim_concepto_cobro
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.dim_concepto_cobro 
+(
+    id_dim_concepto_cobro BIGINT GENERATED ALWAYS AS IDENTITY (START WITH -1 INCREMENT BY 1) PRIMARY KEY,
+    concepto STRING,
+    tipo_reparto STRING,
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim_concepto_cobro';
+"""
+
+spark.sql(sql_query)
