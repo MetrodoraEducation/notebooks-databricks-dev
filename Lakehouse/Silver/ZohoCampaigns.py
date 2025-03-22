@@ -103,10 +103,6 @@ display(zohocampaigns_df)
 
 # COMMAND ----------
 
-display(zohocampaigns_df)
-
-# COMMAND ----------
-
 from pyspark.sql.functions import coalesce, lit, col
 
 # Reemplaza valores nulos en columnas basadas en sus tipos de datos para zohocampaigns_df

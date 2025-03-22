@@ -113,10 +113,6 @@ display(zohodeals_df)
 
 # COMMAND ----------
 
-display(zohodeals_df)
-
-# COMMAND ----------
-
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
 
@@ -217,11 +213,6 @@ zohodeals_df_filtered = zohodeals_df.filter(
 
 # Crear la vista temporal con datos ya filtrados
 zohodeals_df_filtered.createOrReplaceTempView("zohodeals_source_view")
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select * from zohodeals_source_view;
 
 # COMMAND ----------
 

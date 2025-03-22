@@ -10,7 +10,7 @@
 # MAGIC              origen.id_Dim_Origen_SIS AS id_origen_SIS
 # MAGIC             ,CONCAT(origen.codigo_Origen_SIS, receipts.receipt_id) AS cod_recibo
 # MAGIC             ,COALESCE(concepto_cobro.id_dim_concepto_cobro, -1) AS id_dim_concepto_cobro
-# MAGIC             ,receipts.emission_date AS fecha_matricula
+# MAGIC             ,receipts.emission_date AS fecha_emision
 # MAGIC             ,receipts.expiry_date AS fecha_vencimiento
 # MAGIC             ,receipts.collection_date AS fecha_pago
 # MAGIC             ,CASE WHEN receipts.collection_date IS NULL THEN 'Pendiente'
@@ -31,21 +31,14 @@
 # MAGIC             ,COALESCE(sede.id_dim_sede, -1) AS id_dim_sede
 # MAGIC             ,COALESCE(formacion.id_dim_tipo_formacion, -1) AS id_dim_tipo_formacion
 # MAGIC             ,COALESCE(tiponegocio.id_dim_tipo_negocio, -1) AS id_dim_tipo_negocio
-# MAGIC             ,CASE WHEN concepto_cobro.tipo_reparto = 0 OR try_cast(producto.Fecha_Inicio_Reconocimiento AS DATE) IS NULL THEN fctmatricula.fec_matricula
-# MAGIC                   ELSE NULL
+# MAGIC             ,CASE WHEN concepto_cobro.tipo_reparto = 0 OR try_cast(producto.Fecha_Inicio_Reconocimiento AS DATE) IS NULL 
+# MAGIC                   THEN fctmatricula.fec_matricula
+# MAGIC                   ELSE producto.Fecha_Inicio_Reconocimiento
 # MAGIC               END fec_inicio_reconocimiento
 # MAGIC             ,CASE WHEN concepto_cobro.tipo_reparto = 0 THEN fctmatricula.fec_matricula
 # MAGIC                   WHEN try_cast(producto.Fecha_Inicio_Reconocimiento AS DATE) IS NULL THEN fctmatricula.fec_matricula + producto.meses_Duracion
 # MAGIC                   ELSE producto.Fecha_Fin_Reconocimiento
 # MAGIC               END fec_fin_reconocimiento
-# MAGIC             ,CASE 
-# MAGIC                  WHEN fecha_Inicio_Curso IS NULL OR fecha_Fin_Curso IS NULL 
-# MAGIC                  THEN NULL  -- 🔹 Si alguna fecha es NULL, el resultado es NULL
-# MAGIC                  WHEN DATE_TRUNC('month', fecha_Inicio_Curso) = DATE_TRUNC('month', fecha_Fin_Curso) 
-# MAGIC                  THEN 1  -- 🔹 Si están en el mismo mes, el resultado es 1
-# MAGIC                  ELSE CEIL(COALESCE(MONTHS_BETWEEN(fecha_Fin_Curso, fecha_Inicio_Curso), 0))  -- 🔹 Si no, calculamos la diferencia de meses
-# MAGIC             END AS meses_reconocimiento
-# MAGIC            ,receipts.receipt_total / meses_reconocimiento AS importe_Mensual_Reconocimiento
 # MAGIC         FROM silver_lakehouse.ClasslifeReceipts receipts
 # MAGIC    LEFT JOIN gold_lakehouse.origenClasslife origen ON 1 = origen.id_Dim_Origen_SIS
 # MAGIC    LEFT JOIN gold_lakehouse.dim_concepto_cobro concepto_cobro ON receipts.receipt_concept = concepto_cobro.concepto 
@@ -65,101 +58,64 @@
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC CREATE OR REPLACE TEMPORARY VIEW fct_matricula_unique_temp AS
-# MAGIC SELECT * FROM (
-# MAGIC     SELECT *, 
-# MAGIC            ROW_NUMBER() OVER (
-# MAGIC                PARTITION BY cod_matricula 
-# MAGIC                ORDER BY fec_matricula DESC
-# MAGIC            ) AS rn
-# MAGIC     FROM fct_matricula_temp
-# MAGIC ) filtered
-# MAGIC WHERE rn = 1;  -- 🔹 Solo conserva la versión más reciente
+# MAGIC CREATE OR REPLACE TEMPORARY VIEW fct_recibos_temp_1 AS
+# MAGIC SELECT receipts.*
+# MAGIC        , CASE
+# MAGIC             WHEN fec_inicio_reconocimiento IS NULL OR fec_fin_reconocimiento IS NULL THEN NULL
+# MAGIC             ELSE
+# MAGIC               FLOOR(DATEDIFF(day, fec_inicio_reconocimiento, fec_fin_reconocimiento) / 30) + 1
+# MAGIC           END AS meses_reconocimiento
+# MAGIC       ,receipts.importe_recibo / meses_reconocimiento AS importe_Mensual_Reconocimiento
+# MAGIC   FROM fct_recibos_temp receipts;
 # MAGIC
-# MAGIC select * from fct_matricula_unique_temp;
+# MAGIC SELECT * FROM fct_recibos_temp_1;
 
 # COMMAND ----------
 
 # MAGIC %sql
-# MAGIC -- 1️⃣ Insertar nuevos valores sin duplicar registros
-# MAGIC MERGE INTO gold_lakehouse.fct_matricula AS target
-# MAGIC USING (
-# MAGIC     SELECT DISTINCT 
-# MAGIC         id_origen_SIS, cod_matricula, id_dim_estudiante, id_dim_programa, id_dim_modalidad,
-# MAGIC         id_dim_institucion, id_dim_sede, id_dim_producto, id_dim_tipo_formacion,
-# MAGIC         id_dim_tipo_negocio, id_dim_pais, ano_curso, fec_matricula, id_dim_estado_matricula,
-# MAGIC         fec_anulacion, fec_finalizacion, nota_media, cod_descuento, importe_matricula,
-# MAGIC         importe_descuento, try_cast(importe_cobros as DECIMAL(10,2)), tipo_pago, edad_acceso, fec_ultimo_login_LMS, zoho_deal_id
-# MAGIC     FROM fct_matricula_unique_temp
-# MAGIC ) AS source
-# MAGIC ON target.cod_matricula = source.cod_matricula
+# MAGIC MERGE INTO gold_lakehouse.fct_recibos AS tgt
+# MAGIC USING fct_recibos_temp_1 AS src
+# MAGIC ON tgt.cod_recibo = src.cod_recibo
+# MAGIC
 # MAGIC WHEN MATCHED AND (
-# MAGIC     target.id_origen_SIS <> source.id_origen_SIS OR
-# MAGIC     target.id_dim_estudiante <> source.id_dim_estudiante OR
-# MAGIC     target.id_dim_programa <> source.id_dim_programa OR
-# MAGIC     target.id_dim_modalidad <> source.id_dim_modalidad OR
-# MAGIC     target.id_dim_institucion <> source.id_dim_institucion OR
-# MAGIC     target.id_dim_sede <> source.id_dim_sede OR
-# MAGIC     target.id_dim_producto <> source.id_dim_producto OR
-# MAGIC     target.id_dim_tipo_formacion <> source.id_dim_tipo_formacion OR
-# MAGIC     target.id_dim_tipo_negocio <> source.id_dim_tipo_negocio OR
-# MAGIC     target.id_dim_pais <> source.id_dim_pais OR
-# MAGIC     target.ano_curso <> source.ano_curso OR
-# MAGIC     target.fec_matricula <> source.fec_matricula OR
-# MAGIC     target.id_dim_estado_matricula <> source.id_dim_estado_matricula OR
-# MAGIC     target.fec_anulacion <> source.fec_anulacion OR
-# MAGIC     target.fec_finalizacion <> source.fec_finalizacion OR
-# MAGIC     target.nota_media <> source.nota_media OR
-# MAGIC     target.cod_descuento <> source.cod_descuento OR
-# MAGIC     COALESCE(target.importe_matricula, 0) <> source.importe_matricula OR
-# MAGIC     COALESCE(target.importe_descuento, 0) <> source.importe_descuento OR
-# MAGIC     COALESCE(target.importe_cobros, 0) <> source.importe_cobros OR
-# MAGIC     target.tipo_pago <> source.tipo_pago OR
-# MAGIC     target.edad_acceso <> source.edad_acceso OR
-# MAGIC     target.fec_ultimo_login_LMS <> source.fec_ultimo_login_LMS
-# MAGIC ) THEN 
-# MAGIC     UPDATE SET
-# MAGIC         target.id_origen_SIS = source.id_origen_SIS,
-# MAGIC         target.id_dim_estudiante = source.id_dim_estudiante,
-# MAGIC         target.id_dim_programa = source.id_dim_programa,
-# MAGIC         target.id_dim_modalidad = source.id_dim_modalidad,
-# MAGIC         target.id_dim_institucion = source.id_dim_institucion,
-# MAGIC         target.id_dim_sede = source.id_dim_sede,
-# MAGIC         target.id_dim_producto = source.id_dim_producto,
-# MAGIC         target.id_dim_tipo_formacion = source.id_dim_tipo_formacion,
-# MAGIC         target.id_dim_tipo_negocio = source.id_dim_tipo_negocio,
-# MAGIC         target.id_dim_pais = source.id_dim_pais,
-# MAGIC         target.ano_curso = source.ano_curso,
-# MAGIC         target.fec_matricula = source.fec_matricula,
-# MAGIC         target.id_dim_estado_matricula = source.id_dim_estado_matricula,
-# MAGIC         target.fec_anulacion = source.fec_anulacion,
-# MAGIC         target.fec_finalizacion = source.fec_finalizacion,
-# MAGIC         target.nota_media = source.nota_media,
-# MAGIC         target.cod_descuento = source.cod_descuento,
-# MAGIC         target.importe_matricula = source.importe_matricula,
-# MAGIC         target.importe_descuento = source.importe_descuento,
-# MAGIC         target.importe_cobros = source.importe_cobros,
-# MAGIC         target.tipo_pago = source.tipo_pago,
-# MAGIC         target.edad_acceso = source.edad_acceso,
-# MAGIC         target.fec_ultimo_login_LMS = source.fec_ultimo_login_LMS,
-# MAGIC         target.zoho_deal_id = source.zoho_deal_id,
-# MAGIC         target.ETLupdatedDate = current_timestamp()
-# MAGIC WHEN NOT MATCHED THEN 
-# MAGIC     INSERT (
-# MAGIC         id_origen_SIS, cod_matricula, id_dim_estudiante, id_dim_programa, id_dim_modalidad,
-# MAGIC         id_dim_institucion, id_dim_sede, id_dim_producto, id_dim_tipo_formacion,
-# MAGIC         id_dim_tipo_negocio, id_dim_pais, ano_curso, fec_matricula, id_dim_estado_matricula,
-# MAGIC         fec_anulacion, fec_finalizacion, nota_media, cod_descuento, importe_matricula,
-# MAGIC         importe_descuento, importe_cobros, tipo_pago, edad_acceso, fec_ultimo_login_LMS, zoho_deal_id, ETLcreatedDate, ETLupdatedDate
-# MAGIC     )
-# MAGIC     VALUES (
-# MAGIC         source.id_origen_SIS, source.cod_matricula, source.id_dim_estudiante, source.id_dim_programa,
-# MAGIC         source.id_dim_modalidad, source.id_dim_institucion, source.id_dim_sede, source.id_dim_producto,
-# MAGIC         source.id_dim_tipo_formacion, source.id_dim_tipo_negocio, source.id_dim_pais, source.ano_curso,
-# MAGIC         source.fec_matricula, source.id_dim_estado_matricula, source.fec_anulacion, source.fec_finalizacion,
-# MAGIC         source.nota_media, source.cod_descuento, source.importe_matricula, source.importe_descuento, source.importe_cobros,
-# MAGIC         source.tipo_pago, source.edad_acceso, source.fec_ultimo_login_LMS, source.zoho_deal_id, current_timestamp(), current_timestamp()
-# MAGIC     );
+# MAGIC     tgt.id_dim_concepto_cobro <> src.id_dim_concepto_cobro OR
+# MAGIC     tgt.fecha_vencimiento <> src.fecha_vencimiento OR
+# MAGIC     tgt.fecha_pago <> src.fecha_pago OR
+# MAGIC     tgt.estado <> src.estado OR
+# MAGIC     tgt.importe_recibo <> src.importe_recibo OR
+# MAGIC     tgt.tiene_factura <> src.tiene_factura OR
+# MAGIC     tgt.forma_pago <> src.forma_pago OR
+# MAGIC     tgt.fec_inicio_reconocimiento <> src.fec_inicio_reconocimiento OR
+# MAGIC     tgt.fec_fin_reconocimiento <> src.fec_fin_reconocimiento OR
+# MAGIC     tgt.meses_reconocimiento <> src.meses_reconocimiento OR
+# MAGIC     tgt.importe_Mensual_Reconocimiento <> src.importe_Mensual_Reconocimiento
+# MAGIC )
+# MAGIC THEN UPDATE SET
+# MAGIC     tgt.id_dim_concepto_cobro = src.id_dim_concepto_cobro,
+# MAGIC     tgt.fecha_vencimiento = src.fecha_vencimiento,
+# MAGIC     tgt.fecha_pago = src.fecha_pago,
+# MAGIC     tgt.estado = src.estado,
+# MAGIC     tgt.importe_recibo = src.importe_recibo,
+# MAGIC     tgt.tiene_factura = src.tiene_factura,
+# MAGIC     tgt.forma_pago = src.forma_pago,
+# MAGIC     tgt.fec_inicio_reconocimiento = src.fec_inicio_reconocimiento,
+# MAGIC     tgt.fec_fin_reconocimiento = src.fec_fin_reconocimiento,
+# MAGIC     tgt.meses_reconocimiento = src.meses_reconocimiento,
+# MAGIC     tgt.importe_Mensual_Reconocimiento = src.importe_Mensual_Reconocimiento,
+# MAGIC     tgt.ETLupdatedDate = CURRENT_TIMESTAMP()
+# MAGIC
+# MAGIC WHEN NOT MATCHED THEN INSERT (
+# MAGIC     id_origen_SIS, cod_recibo, id_dim_concepto_cobro, fecha_emision, fecha_vencimiento, fecha_pago, estado, importe_recibo, 
+# MAGIC     tiene_factura, forma_pago, id_dim_estudiante, id_dim_producto, id_fct_matricula, id_dim_programa, id_dim_modalidad, id_dim_institucion, 
+# MAGIC     id_dim_sede, id_dim_tipo_formacion, id_dim_tipo_negocio, fec_inicio_reconocimiento, fec_fin_reconocimiento, meses_reconocimiento, 
+# MAGIC     importe_Mensual_Reconocimiento, ETLcreatedDate, ETLupdatedDate
+# MAGIC )
+# MAGIC VALUES (
+# MAGIC     src.id_origen_SIS, src.cod_recibo, src.id_dim_concepto_cobro, src.fecha_emision, src.fecha_vencimiento, src.fecha_pago, src.estado, src.importe_recibo, 
+# MAGIC     src.tiene_factura, src.forma_pago, src.id_dim_estudiante, src.id_dim_producto, src.id_fct_matricula, src.id_dim_programa, src.id_dim_modalidad, src.id_dim_institucion, 
+# MAGIC     src.id_dim_sede, src.id_dim_tipo_formacion, src.id_dim_tipo_negocio, src.fec_inicio_reconocimiento, src.fec_fin_reconocimiento, src.meses_reconocimiento, 
+# MAGIC     src.importe_Mensual_Reconocimiento, CURRENT_TIMESTAMP(), CURRENT_TIMESTAMP()
+# MAGIC );
 
 # COMMAND ----------
 

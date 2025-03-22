@@ -1131,3 +1131,41 @@ LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/dim
 """
 
 spark.sql(sql_query)
+
+# COMMAND ----------
+
+# DBTITLE 1,fct_recibos
+sql_query = f"""
+CREATE TABLE IF NOT EXISTS gold_lakehouse.fct_recibos
+(
+    id_recibo BIGINT GENERATED ALWAYS AS IDENTITY (START WITH 0 INCREMENT BY 1),
+    id_origen_SIS INT,
+    cod_recibo STRING,
+    id_dim_concepto_cobro BIGINT,
+    fecha_emision TIMESTAMP,
+    fecha_vencimiento TIMESTAMP,
+    fecha_pago TIMESTAMP,
+    estado STRING,
+    importe_recibo DECIMAL(18,2),
+    tiene_factura STRING,
+    forma_pago STRING,
+    id_dim_estudiante BIGINT,
+    id_dim_producto BIGINT,
+    id_fct_matricula BIGINT,
+    id_dim_programa BIGINT,
+    id_dim_modalidad BIGINT,
+    id_dim_institucion BIGINT,
+    id_dim_sede BIGINT,
+    id_dim_tipo_formacion BIGINT,
+    id_dim_tipo_negocio BIGINT,
+    fec_inicio_reconocimiento DATE,
+    fec_fin_reconocimiento DATE,
+    meses_reconocimiento INT,
+    importe_Mensual_Reconocimiento DECIMAL(18,2),
+    ETLcreatedDate TIMESTAMP,
+    ETLupdatedDate TIMESTAMP
+)
+USING DELTA
+LOCATION 'abfss://gold@{storage_account_name}.dfs.core.windows.net/lakehouse/fct_recibos';
+"""
+spark.sql(sql_query)

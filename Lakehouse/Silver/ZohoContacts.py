@@ -82,10 +82,6 @@ display(zohocontacts_df)
 
 # COMMAND ----------
 
-display(zohocontacts_df)
-
-# COMMAND ----------
-
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
 
@@ -168,11 +164,6 @@ zohocontacts_df_filtered = zohocontacts_df.filter(
 
 # Crear la vista temporal con datos ya filtrados
 zohocontacts_df_filtered.createOrReplaceTempView("zohocontacts_source_view")
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select * from zohocontacts_source_view
 
 # COMMAND ----------
 

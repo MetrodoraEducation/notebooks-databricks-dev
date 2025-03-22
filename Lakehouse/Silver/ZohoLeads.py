@@ -102,11 +102,6 @@ display(zoholeads_df)
 
 # COMMAND ----------
 
-# DBTITLE 1,Display dataframe
-display(zoholeads_df)
-
-# COMMAND ----------
-
 # DBTITLE 1,Nombrar columnas
 from pyspark.sql.types import *
 from pyspark.sql.functions import *
@@ -206,8 +201,3 @@ zoholeads_df_filtered.createOrReplaceTempView("zoholeads_source_view")
 # MAGIC ON silver_lakehouse.zoholeads.id = zoholeads_source_view.id
 # MAGIC WHEN MATCHED THEN UPDATE SET *
 # MAGIC WHEN NOT MATCHED THEN INSERT *
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select * from silver_lakehouse.zoholeads

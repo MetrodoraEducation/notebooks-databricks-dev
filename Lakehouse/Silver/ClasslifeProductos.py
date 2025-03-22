@@ -323,8 +323,3 @@ classlifetitulaciones_df.createOrReplaceTempView("classlifetitulaciones_view")
 # MAGIC     UPDATE SET *
 # MAGIC WHEN NOT MATCHED THEN 
 # MAGIC     INSERT *;
-
-# COMMAND ----------
-
-# MAGIC %sql
-# MAGIC select * from silver_lakehouse.classlifetitulaciones

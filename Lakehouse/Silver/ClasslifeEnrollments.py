@@ -10,12 +10,6 @@ table_name = "JsaClassLifeEnrollments"
 classlifetitulaciones_df = spark.read.json(f"{bronze_folder_path}/lakehouse/classlife/{endpoint_process_name}/{current_date}/{table_name}.json")
 classlifetitulaciones_df
 
-# 📌 Inspeccionar el esquema inicial
-print("📌 Esquema inicial antes de limpieza:")
-classlifetitulaciones_df.printSchema()
-
-display(classlifetitulaciones_df)
-
 # COMMAND ----------
 
 # MAGIC %md
@@ -23,14 +17,6 @@ display(classlifetitulaciones_df)
 # MAGIC - Limpiar el esquema completo del DataFrame antes de trabajar con las columnas anidadas.
 # MAGIC - Desanidar las estructuras una por una asegurando que no existan conflictos.
 # MAGIC - Revisar si existen estructuras complejas adicionales que deban manejarse de forma especial.
-
-# COMMAND ----------
-
-# 📌 Inspeccionar Esquema Inicial
-print("📌 Esquema inicial antes de limpieza:")
-classlifetitulaciones_df.printSchema()
-
-display(classlifetitulaciones_df)
 
 # COMMAND ----------
 
@@ -55,19 +41,11 @@ def clean_column_names(df):
     
     return df
 
-display(classlifetitulaciones_df)
-
 # COMMAND ----------
 
 # 📌 Extraer el contenido de `data` si existe
 if "data" in classlifetitulaciones_df.columns:
     classlifetitulaciones_df = classlifetitulaciones_df.selectExpr("data.*")
-
-# 📌 Inspeccionar después de extraer `data`
-print("📌 Esquema después de seleccionar `data.*`:")
-classlifetitulaciones_df.printSchema()
-
-display(classlifetitulaciones_df)
 
 # COMMAND ----------
 
@@ -78,8 +56,6 @@ if "items" in classlifetitulaciones_df.columns:
     # Si `items` es un array de estructuras, lo explotamos
     if isinstance(classlifetitulaciones_df.schema["items"].dataType, ArrayType):
         classlifetitulaciones_df = classlifetitulaciones_df.withColumn("items", explode(col("items")))
-    
-display(classlifetitulaciones_df)
 
 # COMMAND ----------
 
@@ -127,7 +103,7 @@ display(classlifetitulaciones_df)
 # COMMAND ----------
 
 # DBTITLE 1,Desanida fees
-from pyspark.sql.functions import col, explode, first, when
+from pyspark.sql.functions import col, explode, first, when, coalesce, lit
 
 # 📌 Desanidar fees si es un ArrayType
 if "fees" in classlifetitulaciones_df.columns:
@@ -159,13 +135,8 @@ columnas_originales = [c for c in classlifetitulaciones_df.columns if c not in [
 # 📌 Consolidar registros por enroll_id y mantener todas las columnas originales
 classlifetitulaciones_df = classlifetitulaciones_df.groupBy("enroll_id").agg(
     *[first(col(c), ignorenulls=True).alias(c) for c in columnas_originales if c not in ["fee_title_matricula", "fee_title_docencia"]],
-    first("fee_title_matricula", ignorenulls=True).alias("fee_title_matricula"),
-    first("fee_title_docencia", ignorenulls=True).alias("fee_title_docencia")
-)
-
-# 📌 Filtrar para mantener solo registros donde fee_title_matricula o fee_title_docencia NO sean NULL
-classlifetitulaciones_df = classlifetitulaciones_df.filter(
-    (col("fee_title_matricula").isNotNull()) | (col("fee_title_docencia").isNotNull())
+    coalesce(first("fee_title_matricula", ignorenulls=True), lit(0)).alias("fee_title_matricula"),
+    coalesce(first("fee_title_docencia", ignorenulls=True), lit(0)).alias("fee_title_docencia")
 )
 
 # 📌 Mostrar el resultado final
